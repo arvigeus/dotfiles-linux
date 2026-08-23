@@ -1,0 +1,7 @@
+{
+  "theme": "dark",
+  "showWelcome": true,
+  "nested": {
+    "declaredByModule": true
+  }
+}
