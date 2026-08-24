@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
-## Sudo conveniences
-## Future: polkit rules, sudoers.d entries, permission management
 set -Eeuo pipefail
 
 source "$SETUP_ROOT/lib/module.sh"
 source "$SETUP_ROOT/lib/env.sh"
+
+packages=(
+    sudo
+)
+pkg_install "${packages[@]}"
+
+install -d -m 0750 /etc/sudoers.d
+printf '%s ALL=(ALL:ALL) ALL\n' "$USERNAME" >"/etc/sudoers.d/10-$USERNAME"
+chmod 0440 "/etc/sudoers.d/10-$USERNAME"
+visudo --check --file "/etc/sudoers.d/10-$USERNAME"
 
 # "please" — polite alias for sudo
 shell_set_alias sudo please sudo

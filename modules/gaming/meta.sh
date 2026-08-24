@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-## Archive utilities — 7z, rar, zip
+## Selectable SteamOS-style Gamescope session and gaming support
 set -Eeuo pipefail
 
 source "$SETUP_ROOT/lib/module.sh"
 
 packages=(
-	aur/proton-cachyos-slr
-    aur/wine-cachyos-opt
+	# Vanilla distro gaming stack.
+	arch:ibus
+	arch:noto-fonts
+	arch:ttf-dejavu
+	arch:pacman-contrib
+	arch:fakeroot
+	fedora:ibus
+	fedora:google-noto-sans-fonts
+	fedora:dejavu-sans-fonts
 )
 
 pkg_install "${packages[@]}"
-
-
-paru -S 
-
-git clone https://github.com/CachyOS/CachyOS-PKGBUILDS.git
-cd CachyOS-PKGBUILDS/cachyos-gaming-meta
-makepkg -si

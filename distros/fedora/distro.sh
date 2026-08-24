@@ -84,6 +84,12 @@ distro_generate_uki() {
 
 	cmdline="rd.luks.name=$luks_uuid=$CRYPT_NAME root=/dev/mapper/$CRYPT_NAME rootfstype=btrfs rootflags=subvol=$slot rw selinux=1 enforcing=1"
 	printf '%s\n' "$cmdline" >"$TARGET_ROOT/etc/kernel/cmdline"
+	install -Dm755 \
+		"$PROJECT_ROOT/distros/fedora/dotfiles-refresh-uki" \
+		"$TARGET_ROOT/usr/local/libexec/dotfiles-refresh-uki"
+	install -Dm755 \
+		"$PROJECT_ROOT/distros/fedora/95-dotfiles-uki.install" \
+		"$TARGET_ROOT/etc/kernel/install.d/95-dotfiles-uki.install"
 
 	target_chroot dracut \
 		--force \

@@ -13,11 +13,14 @@ case "$DISTRO" in
 arch)
 	# Userspace support only. The clean-root backend owns the kernel and UKI;
 	# silently replacing it with linux-g14 here would produce a mismatched UKI.
+	if pkg_native_is_installed switcheroo-control; then
+		pkg_native_remove switcheroo-control
+	fi
 	pkg_install \
-		arch:g14/asusctl \
-		arch:g14/rog-control-center \
-		power-profiles-daemon \
-		switcheroo-control
+		arch:ogc/asusctl \
+		arch:ogc/rog-control-center \
+		arch:power-profiles-daemon \
+		arch:ogc/cardwire
 	;;
 fedora)
 	if pkg_is_installed tuned-ppd; then
@@ -25,12 +28,35 @@ fedora)
 	else
 		pkg_install power-profiles-daemon
 	fi
-	pkg_install fedora:terra/asusctl fedora:terra/asusctl-rog-gui switcheroo-control
-	systemctl enable asusd.service
+	pkg_install fedora:terra/asusctl fedora:terra/asusctl-rog-gui
+	pkg_repo_enable terra
+	if pkg_native_is_installed switcheroo-control; then
+		dnf -y swap --allowerasing switcheroo-control cardwire
+	else
+		pkg_install fedora:terra/cardwire
+	fi
+	pkg_install fedora:terra/cardwire-gui
 	;;
 esac
 
-systemctl enable power-profiles-daemon.service switcheroo-control.service
+systemctl enable \
+	asusd.service \
+	cardwired.service \
+	power-profiles-daemon.service
+
+# GA402RK-L8149 has a 2560x1600 120 Hz Adaptive-Sync panel and an RX 6800S.
+# Scope these values to the Gamescope sessions so Plasma remains user-owned.
+if dmi_matches ga402; then
+	for session in steam ogui-steam; do
+		file_write "/etc/gamescope-session-plus/sessions.d/$session" <<'EOF'
+ADAPTIVE_SYNC=1
+PANEL_TYPE=internal
+CUSTOM_REFRESH_RATES=60,120
+STEAM_DISPLAY_REFRESH_LIMITS=60,120
+VULKAN_ADAPTER=1002:73ef
+EOF
+	done
+fi
 
 file_write "$HOME/.config/rog/rog-control-center.cfg" <<'EOF'
 (

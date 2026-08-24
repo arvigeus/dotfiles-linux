@@ -63,13 +63,16 @@ unmounts all tracked target execution mounts after either success or failure.
 ## UKI boundary
 
 Arch retains the existing systemd-based mkinitcpio hooks, `sd-encrypt`, Btrfs
-rootflags, and microcode autodetection.
+rootflags, and microcode autodetection. A project Pacman hook regenerates the
+currently installed slot's direct UKI after native kernel upgrades.
 
 Fedora uses a generic dracut image with its `crypt`, `btrfs`, systemd initrd,
 i18n/keyboard, and kernel-module support. Dracut/ukify embeds the selected
 Fedora kernel, initramfs, and slot-specific command line in the existing
 `EFI/Linux/dotfiles-{a,b}.efi` convention. Firmware launches it directly;
-no systemd-boot or GRUB package is configured as a boot manager.
+no systemd-boot or GRUB package is configured as a boot manager. Its installed
+`kernel-install` plugin provides the equivalent running-slot refresh for native
+kernel upgrades.
 
 ## SELinux
 

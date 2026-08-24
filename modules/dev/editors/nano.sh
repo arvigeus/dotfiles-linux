@@ -11,11 +11,23 @@ repo_health https://github.com/galenguyer/nano-syntax-highlighting -m 12
 packages=(
 	nano
 	arch:nano-syntax-highlighting
-	curl
-	jq
 )
-
 pkg_install "${packages[@]}"
+
+file_write "/etc/nanorc" <<'EOF'
+# Syntax highlighting
+include "/usr/share/nano/*.nanorc"
+include "/usr/share/nano/extra/*.nanorc"
+include "/usr/share/nano-syntax-highlighting/*.nanorc"
+
+set autoindent
+set linenumbers
+set mouse
+set smarthome
+set tabsize 4
+set tabstospaces
+set trimblanks
+EOF
 
 # https://gitlab.archlinux.org/archlinux/packaging/packages/nano-syntax-highlighting/-/blob/main/PKGBUILD
 install_nano_syntax_highlighting() (

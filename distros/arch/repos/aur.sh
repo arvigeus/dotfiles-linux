@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
 
-_AUR_BUILD_USER=dotfiles-aur
+# shellcheck source=distros/arch/repos/_aur-build.sh
+source "${BASH_SOURCE[0]%/*}/_aur-build.sh"
 
 repo_enable() {
-	pkg_native_install base-devel git sudo
-	pkg_install chaotic-aur/paru
-
-	if ! id "$_AUR_BUILD_USER" >/dev/null 2>&1; then
-		useradd --create-home "$_AUR_BUILD_USER"
-	fi
-	local sudoers="/etc/sudoers.d/$_AUR_BUILD_USER"
-	printf '%s ALL=(root) NOPASSWD: /usr/bin/pacman\n' "$_AUR_BUILD_USER" >"$sudoers"
-	chmod 0440 "$sudoers"
+	_aur_build_setup
 }
 
 repo_install() {
 	repo_enable
-	sudo -u "$_AUR_BUILD_USER" paru --noconfirm --needed --skipreview -S -- "$@"
+
+	local package
+	for package in "$@"; do
+		sudo --user "$_AUR_BUILD_USER" \
+			env HOME="$_AUR_BUILD_HOME" \
+			paru --noconfirm --needed --skipreview -S -- "$package"
+	done
 }
 
 repo_is_installed() {

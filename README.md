@@ -242,6 +242,17 @@ command alias. The imported module inventory,
 distribution limitations, and disabled runtime-only work are documented in
 [docs/ported-modules.md](docs/ported-modules.md).
 
+### KDE and gaming sessions
+
+The desktop module installs a small Plasma Wayland environment with KDE's
+Plasma Login Manager. The gaming module adds selectable **SteamOS (gamescope)**
+and **Steam Big Picture Plus** sessions while keeping manual login. Steam's OS
+update action performs a native in-place update of the active root; clean A/B
+rebuilds remain available whenever a fresh generation is wanted. Laptop-specific
+RX 6800S/Cardwire behavior, component provenance, repository boundaries, and
+optional InputPlumber and PowerStation activation are covered in
+[docs/gaming-session.md](docs/gaming-session.md).
+
 ## Home and preserved state
 
 Persistent home is mounted only after provisioning succeeds. The active and

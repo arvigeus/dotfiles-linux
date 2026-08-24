@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# kernel-install plugin: refresh the current slot after a Fedora kernel install.
+set -Eeuo pipefail
+
+case ${1:-} in
+add)
+	exec /usr/local/libexec/dotfiles-refresh-uki "${2:?kernel version missing}"
+	;;
+*) exit 0 ;;
+esac

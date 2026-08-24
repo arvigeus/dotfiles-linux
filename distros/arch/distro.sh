@@ -54,8 +54,10 @@ distro_configure_base_system() {
 distro_generate_uki() {
 	local slot=$1
 	local output=$2
-	local luks_uuid
+	local luks_uuid letter installed_output
 	luks_uuid=$(cryptsetup luksUUID "$CRYPT_PARTITION")
+	letter=$(slot_letter "$slot")
+	installed_output="/efi/EFI/Linux/$PROJECT_ID-$letter.efi"
 
 	cat >"$TARGET_ROOT/etc/kernel/cmdline" <<EOF
 rd.luks.name=$luks_uuid=$CRYPT_NAME root=/dev/mapper/$CRYPT_NAME rootflags=subvol=$slot rw
@@ -74,6 +76,27 @@ default_uki="$output"
 EOF
 
 	target_chroot mkinitcpio -p "$PROJECT_ID"
+
+	# Initial generation targets an atomic temporary path. Future native kernel
+	# transactions must write the active slot's permanent UKI, so retain that
+	# destination in the installed preset and explicitly rebuild it after the
+	# stock kernel hook has copied a new /boot/vmlinuz-*.
+	sed -i \
+		"s|^default_uki=.*|default_uki=\"$installed_output\"|" \
+		"$TARGET_ROOT/etc/mkinitcpio.d/$PROJECT_ID.preset"
+	mkdir -p "$TARGET_ROOT/etc/pacman.d/hooks"
+	cat >"$TARGET_ROOT/etc/pacman.d/hooks/95-$PROJECT_ID-uki.hook" <<EOF
+[Trigger]
+Type = Package
+Operation = Install
+Operation = Upgrade
+Target = $KERNEL_PACKAGE
+
+[Action]
+Description = Refreshing the active $PROJECT_ID UKI...
+When = PostTransaction
+Exec = /usr/bin/mkinitcpio -p $PROJECT_ID
+EOF
 }
 
 pkg_native_install() {

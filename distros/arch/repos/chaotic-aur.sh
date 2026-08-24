@@ -33,7 +33,11 @@ EOF
 
 repo_install() {
 	repo_enable
-	pkg_native_install "$@"
+	local package packages=()
+	for package in "$@"; do
+		packages+=("chaotic-aur/$package")
+	done
+	pkg_native_install "${packages[@]}"
 }
 
 repo_is_installed() {

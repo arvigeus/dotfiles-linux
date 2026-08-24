@@ -36,12 +36,15 @@ repo_is_installed package
 
 It may additionally expose `repo_enable` for internal use. Repository setup
 must be idempotent. A plugin can enable another repository with
-`pkg_repo_enable`; FlatPark uses this to enable Flathub for runtimes. A plugin
-may also install a dependency through the public package interface—for example,
-the Arch `aur` plugin installs `chaotic-aur/paru`—instead of duplicating another
-repository's setup. The
-package dispatcher groups packages by repository, so `repo_install` receives
-all matching packages in a single call. Repository removal is intentionally not
+`pkg_repo_enable`; Flatpak uses this to enable Flathub for runtimes. A plugin
+may also install a dependency through the public package interface. On Arch,
+`aur` uses Chaotic-AUR's `paru` package but still builds requested packages from
+the AUR. `chaotic-aur/<name>` selects a binary from Chaotic explicitly,
+`ogc/<name>` selects an OGC binary, and `local-aur/<name>` is the only route
+that builds a tracked `distros/arch/aur/<name>/PKGBUILD`. OGC is placed above
+Chaotic-AUR, and both remain below Arch's official repositories. The package
+dispatcher groups packages by repository, so `repo_install` receives all
+matching packages in a single call. Repository removal is intentionally not
 part of the declarative clean-root build model.
 
 Modules select packages with:

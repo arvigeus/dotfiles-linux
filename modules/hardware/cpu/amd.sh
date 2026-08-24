@@ -12,6 +12,10 @@ packages=(
 	arch:amd-ucode
 	fedora:amd-ucode-firmware
 	fedora:bazzite/ryzenadj
+
+	# Tools
+	arch:cpupower
+	fedora:kernel-tools
 )
 pkg_install "${packages[@]}"
 

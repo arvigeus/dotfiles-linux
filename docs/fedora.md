@@ -37,6 +37,13 @@ The output is atomically placed at
 `EFI/Linux/dotfiles-a.efi` or `dotfiles-b.efi` and is registered
 directly with UEFI.
 
+The installed mutable root also contains a `kernel-install` plugin and
+`dotfiles-refresh-uki` helper. A native kernel installation regenerates the UKI
+for the currently mounted A/B slot, and Steam's native updater invokes the
+helper once more after a DNF transaction as a fallback. Neither path modifies
+the inactive slot. The initial clean build continues to use the offline backend
+path above.
+
 ## SELinux
 
 Provisioning can create files through DNF, static overlays, modules, preserved
@@ -81,6 +88,8 @@ this development environment**. Validate these assumptions in a disposable VM:
    the minimal package set, and the copied resolver file is accepted.
 9. Kernel package scriptlets in the installroot do not require a configured
    GRUB/systemd-boot boot manager; the explicitly generated UKI is sufficient.
+10. Fedora kernel transactions invoke the installed `kernel-install` plugin,
+    and its dracut command atomically replaces only the running slot's UKI.
 
 Use the four exact manual validation flows in the project README. Do not treat
 successful UKI generation alone as proof that unlock, root selection, SELinux,

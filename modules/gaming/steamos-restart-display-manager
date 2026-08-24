@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Keep the upstream Steam helper path while supporting current display managers.
+set -Eeuo pipefail
+
+if ((EUID != 0)); then
+	exec pkexec --disable-internal-agent "$0" "$@"
+fi
+
+for service in plasmalogin.service sddm.service gdm.service lightdm.service lxdm.service; do
+	if systemctl is-active --quiet "$service"; then
+		exec systemctl restart "$service"
+	fi
+done
+
+exit 0
