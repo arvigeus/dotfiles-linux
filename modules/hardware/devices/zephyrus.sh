@@ -11,8 +11,8 @@ dmi_matches zephyrus || dmi_matches 'rog' || exit 0
 
 case "$DISTRO" in
 arch)
-	# Userspace support only. The clean-root backend owns the kernel and UKI;
-	# silently replacing it with linux-g14 here would produce a mismatched UKI.
+	# The managed kernel is linux-ogc. Do not replace it opportunistically with
+	# linux-g14 in this hardware-specific module and desynchronize the UKI.
 	if pkg_native_is_installed switcheroo-control; then
 		pkg_native_remove switcheroo-control
 	fi
@@ -29,7 +29,6 @@ fedora)
 		pkg_install power-profiles-daemon
 	fi
 	pkg_install fedora:terra/asusctl fedora:terra/asusctl-rog-gui
-	pkg_repo_enable terra
 	if pkg_native_is_installed switcheroo-control; then
 		dnf -y swap --allowerasing switcheroo-control cardwire
 	else

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034 # shared with other sourced installer components
 
 log() {
 	printf '\033[1;34m==>\033[0m %s\n' "$*"
@@ -44,62 +45,142 @@ detect_native_distribution() {
 	export DISTRO PACKAGE_MANAGER DISTRO_VERSION_ID
 }
 
-load_config() {
-	local detected_project_root
-	detected_project_root=$(cd -- "$(dirname -- "${BASH_SOURCE[1]}")" && pwd)
-	PROJECT_ROOT=$detected_project_root
-	CONFIG_FILE=${CONFIG_FILE:-"$PROJECT_ROOT/.env"}
-	[[ -f $CONFIG_FILE ]] || die "Missing $CONFIG_FILE; copy .env.example to .env"
-
-	# Project identity and distribution are internal state, never configuration.
-	# Discard inherited and .env values before assigning/detecting them.
+initialize_project() {
+	PROJECT_ROOT=$(cd -- "${PROJECT_ROOT:?project root is required}" && pwd)
 	unset PROJECT_ID DISTRO PACKAGE_MANAGER DISTRO_VERSION_ID
-	set -a
-	# shellcheck disable=SC1090
-	source "$CONFIG_FILE"
-	set +a
-	PROJECT_ROOT=$detected_project_root
-	unset PROJECT_ID DISTRO PACKAGE_MANAGER DISTRO_VERSION_ID
-	PROJECT_ID=dotfiles
+	PROJECT_ID=system
 	readonly PROJECT_ID
 	export PROJECT_ID
 	detect_native_distribution
 	# shellcheck disable=SC1090
-	source "$PROJECT_ROOT/distros/$DISTRO/distro.sh"
+	source "$PROJECT_ROOT/installer/distros/$DISTRO/backend.sh"
+	# shellcheck disable=SC1090
+	source "$PROJECT_ROOT/pm/$DISTRO/$PACKAGE_MANAGER.sh"
 	# shellcheck source=lib/package.sh
 	source "$PROJECT_ROOT/lib/package.sh"
-	distro_set_defaults
+	SYSTEM_CONFIG=/etc/$PROJECT_ID/config
+}
 
-	: "${DISK:?Missing DISK in .env}"
-	: "${HOSTNAME:?Missing HOSTNAME in .env}"
-	: "${USERNAME:?Missing USERNAME in .env}"
+prompt_value() {
+	local -n destination=$1
+	local prompt=$2 default=${3:-} value
+	if [[ -n $default ]]; then
+		read -r -p "$prompt [$default]: " value </dev/tty
+		value=${value:-$default}
+	else
+		read -r -p "$prompt: " value </dev/tty
+	fi
+	destination=$value
+}
+
+prompt_bootstrap_config() {
+	[[ -r /dev/tty ]] || die "Interactive bootstrap requires a terminal"
+	log "Available installation disks"
+	lsblk -dpno NAME,SIZE,MODEL,TYPE | awk '$NF == "disk" { $NF=""; sub(/[[:space:]]+$/, ""); print "  " $0 }'
+
+	prompt_value DISK "Disk to erase (full device path)"
+	DISK=$(readlink -f -- "$DISK")
+	[[ -b $DISK ]] || die "Installation disk is not a block device: $DISK"
+	[[ $(lsblk -dnro TYPE "$DISK") == disk ]] || die "Select a complete disk, not a partition: $DISK"
+
+	prompt_value HOSTNAME "Hostname" workstation
+	[[ $HOSTNAME =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]] || die "Invalid hostname: $HOSTNAME"
+	prompt_value USERNAME "Login username" user
+	[[ $USERNAME =~ ^[a-z_][a-z0-9_-]*$ ]] || die "Invalid username: $USERNAME"
+	prompt_value TIMEZONE "Timezone" UTC
+	[[ $TIMEZONE =~ ^[a-zA-Z0-9_+.-]+(/[a-zA-Z0-9_+.-]+)*$ && $TIMEZONE != *..* ]] ||
+		die "Invalid timezone: $TIMEZONE"
+	[[ -f /usr/share/zoneinfo/$TIMEZONE ]] || die "Unknown timezone: $TIMEZONE"
+	prompt_value LOCALE "Locale" en_US.UTF-8
+	[[ $LOCALE =~ ^[a-zA-Z0-9_.@-]+$ ]] || die "Invalid locale: $LOCALE"
+	prompt_value KEYMAP "Console keymap" us
+	[[ $KEYMAP =~ ^[a-zA-Z0-9_.+-]+$ ]] || die "Invalid keymap: $KEYMAP"
+
+	printf '\nInstallation summary:\n'
+	printf '  Distribution: %s\n' "$DISTRO"
+	printf '  Disk:         %s (will be erased)\n' "$DISK"
+	printf '  Hostname:     %s\n' "$HOSTNAME"
+	printf '  User:         %s (UID %s)\n' "$USERNAME" 1000
+	printf '  Timezone:     %s\n' "$TIMEZONE"
+	printf '  Locale:       %s\n' "$LOCALE"
+	printf '  Keymap:       %s\n\n' "$KEYMAP"
+}
+
+load_installed_config() {
+	[[ -f $SYSTEM_CONFIG ]] || die "Missing installed-system configuration: $SYSTEM_CONFIG"
+	[[ $(stat -c %u "$SYSTEM_CONFIG") == 0 ]] || die "$SYSTEM_CONFIG must be owned by root"
+	local permissions
+	permissions=$(stat -c %a "$SYSTEM_CONFIG")
+	[[ ${permissions: -2:1} != [2367] && ${permissions: -1} != [2367] ]] ||
+		die "$SYSTEM_CONFIG must not be group- or world-writable"
+	# shellcheck disable=SC1090
+	source "$SYSTEM_CONFIG"
+}
+
+finalize_config() {
+	: "${DISK:?Missing installation disk}"
+	: "${HOSTNAME:?Missing hostname}"
+	: "${USERNAME:?Missing username}"
+	: "${TIMEZONE:?Missing timezone}"
+	: "${LOCALE:?Missing locale}"
+	: "${KEYMAP:?Missing keymap}"
 
 	local partition_separator=
 	[[ $DISK == *[0-9] ]] && partition_separator=p
 	export ESP_PARTITION_NUMBER=1
-	ESP_PARTITION=${ESP_PARTITION:-"${DISK}${partition_separator}1"}
-	CRYPT_PARTITION=${CRYPT_PARTITION:-"${DISK}${partition_separator}2"}
-	CRYPT_NAME=${CRYPT_NAME:-cryptroot}
-	EFI_SIZE_MIB=${EFI_SIZE_MIB:-1024}
-	ROOT_A=${ROOT_A:-@root-a}
-	ROOT_B=${ROOT_B:-@root-b}
-	HOME_SUBVOLUME=${HOME_SUBVOLUME:-@home}
-	BTRFS_MOUNT_OPTIONS=${BTRFS_MOUNT_OPTIONS:-compress=zstd,noatime}
-	USER_UID=${USER_UID:-1000}
-	USER_GID=${USER_GID:-$USER_UID}
-	USER_SHELL=${USER_SHELL:-/bin/bash}
-	TIMEZONE=${TIMEZONE:-UTC}
-	LOCALE=${LOCALE:-en_US.UTF-8}
-	KEYMAP=${KEYMAP:-us}
-	EFI_LABEL_A=${EFI_LABEL_A:-"$HOSTNAME A"}
-	EFI_LABEL_B=${EFI_LABEL_B:-"$HOSTNAME B"}
-	MODULES_PATH=${MODULES_PATH:-modules}
-	HOME_DELETE_MODE=${HOME_DELETE_MODE:-unchanged}
+	ESP_PARTITION="${DISK}${partition_separator}1"
+	CRYPT_PARTITION="${DISK}${partition_separator}2"
+	CRYPT_NAME=cryptroot
+	EFI_SIZE_MIB=1024
+	ROOT_A=@root-a
+	ROOT_B=@root-b
+	HOME_SUBVOLUME=@home
+	BTRFS_MOUNT_OPTIONS=compress=zstd,noatime
+	USER_UID=1000
+	USER_GID=$USER_UID
+	USER_SHELL=/bin/bash
+	EFI_LABEL_A="$HOSTNAME A"
+	EFI_LABEL_B="$HOSTNAME B"
+	MODULES_PATH=modules
+	HOME_DELETE_MODE=unchanged
 
-	WORK_ROOT=${WORK_ROOT:-"/mnt/$PROJECT_ID"}
+	WORK_ROOT="/mnt/$PROJECT_ID"
 	export TARGET_ROOT="$WORK_ROOT/root"
 	export TOP_LEVEL="$WORK_ROOT/top"
 	export MAPPER_DEVICE="/dev/mapper/$CRYPT_NAME"
+	distro_set_defaults
+}
+
+load_bootstrap_config() {
+	initialize_project
+	prompt_bootstrap_config
+	finalize_config
+}
+
+load_rebuild_config() {
+	initialize_project
+	load_installed_config
+	finalize_config
+	local root_source
+	root_source=$(findmnt --noheadings --output SOURCE /)
+	root_source=${root_source%%\[*}
+	[[ $root_source == "$MAPPER_DEVICE" ]] ||
+		die "The running root does not use the configured mapper $MAPPER_DEVICE"
+}
+
+write_system_config() {
+	local destination="$TARGET_ROOT$SYSTEM_CONFIG"
+	install -d -m 0755 "$(dirname -- "$destination")"
+	{
+		printf '# Generated during interactive bootstrap; contains no secrets.\n'
+		printf 'DISK=%q\n' "$DISK"
+		printf 'HOSTNAME=%q\n' "$HOSTNAME"
+		printf 'USERNAME=%q\n' "$USERNAME"
+		printf 'TIMEZONE=%q\n' "$TIMEZONE"
+		printf 'LOCALE=%q\n' "$LOCALE"
+		printf 'KEYMAP=%q\n' "$KEYMAP"
+	} >"$destination"
+	chmod 0644 "$destination"
 }
 
 require_root() {

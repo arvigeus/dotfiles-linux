@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
+set -Eeuo pipefail
+
+source "$SETUP_ROOT/lib/module.sh"
+
 
 packages=(
-	arch:local-aur/steamos-manager-powerstation
+	arch:pkgbuild/steamos-manager-powerstation
 	fedora:terra/steamos-manager-powerstation
 )
 

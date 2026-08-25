@@ -9,6 +9,8 @@ source "$SETUP_ROOT/lib/browsers.sh"
 
 packages=(
 	firefox
+	arch:aur/crudini
+	fedora:crudini
 )
 
 BROWSERS_CONFIG=$(json_strip_comments "$MODULE_DIR/common.jsonc")

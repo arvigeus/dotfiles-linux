@@ -2,9 +2,9 @@
 set -Eeuo pipefail
 
 PROJECT_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-CONFIG_FILE=${CONFIG_FILE:-"$PROJECT_ROOT/.env"}
+CONFIG_FILE=${CONFIG_FILE:-"$PROJECT_ROOT/.vm.env"}
 [[ -f $CONFIG_FILE ]] || {
-	echo "Missing $CONFIG_FILE; copy .env.example to .env" >&2
+	echo "Missing $CONFIG_FILE; copy .vm.env.example to .vm.env" >&2
 	exit 1
 }
 
@@ -12,6 +12,8 @@ set -a
 # shellcheck disable=SC1090
 source "$CONFIG_FILE"
 set +a
+
+HOSTNAME=${HOSTNAME:-system-vm}
 
 absolute_path() {
 	local path=$1

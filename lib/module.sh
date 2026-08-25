@@ -7,7 +7,7 @@ source "$SETUP_ROOT/lib/github.sh"
 	return 1 2>/dev/null || exit 1
 }
 # shellcheck disable=SC1090
-source "$SETUP_ROOT/distros/$DISTRO/distro.sh"
+source "$SETUP_ROOT/pm/$DISTRO/$PACKAGE_MANAGER.sh"
 # shellcheck source=lib/package.sh
 source "$SETUP_ROOT/lib/package.sh"
 
@@ -82,43 +82,99 @@ pkg_from_source() {
 	[[ $restore_errexit == false ]] || set -e
 
 	if ((${#added_packages[@]} > 0)); then
-		pkg_native_remove "${added_packages[@]}" || cleanup_status=$?
+		pkg_remove "${added_packages[@]}" || cleanup_status=$?
 	fi
 
 	((build_status == 0)) || return "$build_status"
 	return "$cleanup_status"
 }
 
-# Atomically replace a file with stdin. The existing mode is retained unless a
-# mode is supplied as the second argument.
+# Parse install-style metadata flags for file_write and file_append.
+_file_parse_options() {
+	FILE_MODE=
+	FILE_OWNER=
+	FILE_GROUP=
+	FILE_DESTINATION=
+
+	while (($# > 0)); do
+		case $1 in
+		-m | --mode)
+			(($# >= 2)) || { printf '%s requires a value\n' "$1" >&2; return 1; }
+			FILE_MODE=$2
+			shift 2
+			;;
+		-o | --owner)
+			(($# >= 2)) || { printf '%s requires a value\n' "$1" >&2; return 1; }
+			FILE_OWNER=$2
+			shift 2
+			;;
+		-g | --group)
+			(($# >= 2)) || { printf '%s requires a value\n' "$1" >&2; return 1; }
+			FILE_GROUP=$2
+			shift 2
+			;;
+		--)
+			shift
+			break
+			;;
+		-*)
+			printf 'Unknown file option: %s\n' "$1" >&2
+			return 1
+			;;
+		*) break ;;
+		esac
+	done
+
+	(($# == 1)) || {
+		printf 'Exactly one destination is required\n' >&2
+		return 1
+	}
+	FILE_DESTINATION=$1
+
+	if [[ -e $FILE_DESTINATION || -L $FILE_DESTINATION ]]; then
+		[[ -n $FILE_MODE ]] || FILE_MODE=$(stat -c %a -- "$FILE_DESTINATION")
+		[[ -n $FILE_OWNER ]] || FILE_OWNER=$(stat -c %u -- "$FILE_DESTINATION")
+		[[ -n $FILE_GROUP ]] || FILE_GROUP=$(stat -c %g -- "$FILE_DESTINATION")
+	else
+		FILE_MODE=${FILE_MODE:-0644}
+		FILE_OWNER=${FILE_OWNER:-root}
+		FILE_GROUP=${FILE_GROUP:-root}
+	fi
+}
+
+# Atomically replace a file with stdin.
+# Usage: file_write [-m MODE] [-o OWNER] [-g GROUP] DESTINATION
 file_write() {
-	local destination=${1:?file_write requires a destination}
-	local mode=${2:-}
+	_file_parse_options "$@" || return
+	local destination=$FILE_DESTINATION
 	local temporary="${destination}.${PROJECT_ID}-tmp"
 
 	mkdir -p "$(dirname -- "$destination")"
-	[[ -n $mode ]] || mode=$([[ -e $destination ]] && stat -c %a "$destination" || printf '0644')
+	rm -f -- "$temporary"
 	cat >"$temporary"
-	chmod "$mode" "$temporary"
+	chmod "$FILE_MODE" "$temporary"
+	chown "$FILE_OWNER:$FILE_GROUP" "$temporary"
 	mv -Tf -- "$temporary" "$destination"
 }
 
 # Atomically append stdin to a file. Rebuilding a fresh root prevents content
 # from accumulating between generations.
+# Usage: file_append [-m MODE] [-o OWNER] [-g GROUP] DESTINATION
 file_append() {
-	local destination=${1:?file_append requires a destination}
-	local mode=${2:-}
+	_file_parse_options "$@" || return
+	local destination=$FILE_DESTINATION
 	local temporary="${destination}.${PROJECT_ID}-tmp"
 
 	mkdir -p "$(dirname -- "$destination")"
-	[[ -n $mode ]] || mode=$([[ -e $destination ]] && stat -c %a "$destination" || printf '0644')
-	if [[ -e $destination ]]; then
+	rm -f -- "$temporary"
+	if [[ -e $destination || -L $destination ]]; then
 		cat -- "$destination" >"$temporary"
 	else
 		: >"$temporary"
 	fi
 	cat >>"$temporary"
-	chmod "$mode" "$temporary"
+	chmod "$FILE_MODE" "$temporary"
+	chown "$FILE_OWNER:$FILE_GROUP" "$temporary"
 	mv -Tf -- "$temporary" "$destination"
 }
 

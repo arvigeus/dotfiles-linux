@@ -36,7 +36,7 @@ install_gravity_mark() (
 	curl --fail --silent --show-error --location \
 		--output "$installer" "$installer_url"
 	install -Dm755 "$installer" /opt/gravity-mark/GravityMark.run
-	file_write /usr/local/bin/gravity-mark 0755 <<'EOF'
+	file_write -m 0755 /usr/local/bin/gravity-mark <<'EOF'
 #!/usr/bin/env bash
 exec /opt/gravity-mark/GravityMark.run "$@"
 EOF

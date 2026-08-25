@@ -33,6 +33,7 @@ EOF
 	printf 'KEYMAP=%s\n' "$KEYMAP" >"$TARGET_ROOT/etc/vconsole.conf"
 	printf 'LANG=%s\n' "$LOCALE" >"$TARGET_ROOT/etc/locale.conf"
 	distro_configure_base_system
+	pkg_native_configure "$TARGET_ROOT"
 	target_chroot ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
 	target_chroot hwclock --systohc
 

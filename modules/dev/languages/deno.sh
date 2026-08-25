@@ -6,7 +6,8 @@ set -Eeuo pipefail
 source "$SETUP_ROOT/lib/module.sh"
 
 packages=(
-	deno
+	arch:deno
+	fedora:terra/deno
 )
 
 pkg_install "${packages[@]}"

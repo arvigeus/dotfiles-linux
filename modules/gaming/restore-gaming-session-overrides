@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 install -d /usr/bin/steamos-polkit-helpers
-ln -sfn /usr/local/libexec/dotfiles/steamos-update \
+ln -sfn /usr/local/libexec/system/steamos-update \
 	/usr/bin/steamos-update
-ln -sfn /usr/local/libexec/dotfiles/steamos-restart-display-manager \
+ln -sfn /usr/local/libexec/system/steamos-restart-display-manager \
 	/usr/bin/steamos-polkit-helpers/steamos-restart-sddm

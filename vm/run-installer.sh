@@ -8,7 +8,7 @@ command -v qemu-system-x86_64 >/dev/null || {
 	exit 1
 }
 [[ -n ${SOURCE_ISO:-} ]] || {
-	echo 'Set SOURCE_ISO in .env' >&2
+	echo 'Set SOURCE_ISO in .vm.env' >&2
 	exit 1
 }
 require_vm_file "$SOURCE_ISO"

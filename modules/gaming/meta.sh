@@ -6,12 +6,11 @@ source "$SETUP_ROOT/lib/module.sh"
 
 packages=(
 	# Vanilla distro gaming stack.
-	arch:ibus
+	ibus
 	arch:noto-fonts
 	arch:ttf-dejavu
 	arch:pacman-contrib
 	arch:fakeroot
-	fedora:ibus
 	fedora:google-noto-sans-fonts
 	fedora:dejavu-sans-fonts
 )

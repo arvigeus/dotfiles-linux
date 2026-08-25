@@ -1,96 +1,264 @@
-# Design notes
+# Design contract
 
-## Distribution boundary
+This document is the source of truth for the project. Code and other
+documentation must follow it; existing behavior is not evidence that the
+behavior is intentional.
 
-`load_config` discards any inherited or configured distribution values, reads
-`/etc/os-release`, and exports exactly one native backend:
+## Purpose
 
-- `lib/distro/arch.sh`: pacstrap/Pacman, Arch base packages and locale setup,
-  CPU microcode selection, and mkinitcpio UKIs.
-- `lib/distro/fedora.sh`: DNF5 installroot/RPM operations, Fedora base packages,
-  dracut/ukify UKIs, and SELinux labelling.
+The repository manages a personal Arch Linux or Fedora system with ordinary
+Bash. It aims for a declarative *description* of the desired system without
+claiming reproducibility, immutability, or complete package-state enforcement.
 
-Common code owns partitioning, LUKS2, Btrfs, slots, mounts, credentials, static
-files, module execution, persistent home, UEFI entries, and reconciliation.
-The fixed, non-configurable `PROJECT_ID=dotfiles` namespaces project-owned
-runtime, policy, backup, preset, and UKI paths; it is deliberately independent
-of the machine hostname. There is intentionally no distribution configuration
-or cross-build path.
+The installed roots are conventional mutable distributions. It is valid to
+update the running system or install something manually. Those changes are
+accepted drift. A later clean rebuild discards root-local drift unless a module
+declares it again or explicitly preserves it.
 
-## Module independence and selection
+## Native distribution boundary
 
-Recursive lexical discovery provides deterministic logs, not a dependency API.
-Modules run in isolated Bash processes and must install their own requirements,
-source their own reusable helpers, and configure any required third-party
-repository themselves. Adding an ordered `modules.conf` would hide dependencies
-and is intentionally avoided.
+Bootstrap runs from installation media of the distribution being installed:
 
-Machine-specific modules use native hardware guards instead: CPU vendor, PCI
-vendor, DMI identity, or USB vendor. Broader workstation/persona selection can
-use a separate tree through `MODULES_PATH`, but selection must not supply shared
-shell state or execution-order dependencies.
+```text
+Arch ISO   -> Arch system
+Fedora ISO -> Fedora system
+```
 
-## Target execution
+The distribution is detected from `/etc/os-release`; it is never selected in a
+configuration file. After installation, both A/B roots remain generations of
+that same distribution. Cross-distribution builds and migrations are out of
+scope.
 
-`target_chroot` uses plain `chroot` only after preparing a complete execution
-environment. `/dev` is recursively bound (including `/dev/pts`), `/proc` is a
-fresh proc mount, `/sys` is recursively bound, and `/run` is a private tmpfs.
-Live `/etc/resolv.conf` content is copied into the target for DNS. Every mount is
-registered in the existing reverse-order cleanup stack, including nested module
-and old-skeleton bind mounts.
+Distribution lifecycle implementations live below `installer/distros/`. Native package
+manager operations and manager-level configuration live in
+`pm/arch/pacman.sh` and `pm/fedora/dnf.sh`. Repository and non-native
+package-manager plugins live below `pm/` as described later. Keeping the native
+manager inside its distro directory leaves room for another manager without
+conflating it with the distro backend.
 
-## Rebuild transaction
+## Storage and boot model
 
-1. Detect the distribution of the running root and select its native backend.
-2. Identify the mounted Btrfs root subvolume.
-3. Delete and recreate only the inactive root subvolume.
-4. Mount the inactive root and shared ESP; leave home unmounted.
-5. Install a native clean base and create the configured login account.
-6. Copy the common static `files/` overlay into the candidate.
-7. Run every recursive Bash module with `HOME=/etc/skel`, `DISTRO`, and
-   `PACKAGE_MANAGER`.
-8. Copy machine-local state requested declaratively by modules from the active root.
-9. Generate a slot-specific native UKI at a temporary ESP path and rename it.
-10. Mount persistent home and reconcile active versus candidate skeletons.
-11. On Fedora, relabel the complete candidate and persistent home with the
-    candidate policy, excluding pseudo-filesystems and the FAT ESP.
-12. Put the candidate direct UKI first in UEFI `BootOrder`.
+The fixed layout is:
 
-A failure before step 10 does not touch home. A failure before step 12 does not
-change firmware ordering. The active root and UKI are never modified. Cleanup
-unmounts all tracked target execution mounts after either success or failure.
+```text
+EFI System Partition (FAT32)
+└── EFI/Linux/
+    ├── system-a.efi
+    └── system-b.efi
 
-## UKI boundary
+LUKS2 partition
+└── Btrfs filesystem
+    ├── @root-a
+    ├── @root-b
+    └── @home
+```
 
-Arch retains the existing systemd-based mkinitcpio hooks, `sd-encrypt`, Btrfs
-rootflags, and microcode autodetection. A project Pacman hook regenerates the
-currently installed slot's direct UKI after native kernel upgrades.
+A and B are mutable Btrfs subvolumes, not separate disk partitions. Home is a
+third, persistent subvolume. Firmware boots slot-specific unified kernel images
+directly; the project does not install GRUB or systemd-boot as a boot manager.
 
-Fedora uses a generic dracut image with its `crypt`, `btrfs`, systemd initrd,
-i18n/keyboard, and kernel-module support. Dracut/ukify embeds the selected
-Fedora kernel, initramfs, and slot-specific command line in the existing
-`EFI/Linux/dotfiles-{a,b}.efi` convention. Firmware launches it directly;
-no systemd-boot or GRUB package is configured as a boot manager. Its installed
-`kernel-install` plugin provides the equivalent running-slot refresh for native
-kernel upgrades.
+Bootstrap destructively creates the layout and installs slot A. It creates B as
+an empty subvolume but does not create a firmware entry that points to a missing
+B UKI.
 
-## SELinux
+## Interactive bootstrap
 
-Fedora provisioning remains SELinux-aware. After static files, modules,
-preserved state, and home reconciliation, host `setfiles` applies the
-candidate's targeted policy to the candidate root and mounted persistent home.
-`/dev`, `/proc`, `/sys`, private `/run`, and the FAT ESP are excluded. The UKI
-keeps `selinux=1 enforcing=1`.
+`bootstrap.sh` asks for the target disk, hostname, login username, timezone,
+locale, and console keymap. It then asks for the login and LUKS credentials at
+the commands that create them. No installer `.env` file is required.
 
-Because the complete offline tree is labelled before activation, the backend
-does not create `/.autorelabel`; therefore no deliberate first-boot relabel
-delay is expected. If manual recovery creates `/.autorelabel`, Fedora may spend
-substantial time relabelling at the next boot, and Fedora guidance recommends a
-permissive relabel boot when labels are not already trustworthy.
+The non-secret answers are stored as root-owned system state in
+`/etc/system/config`. Rebuild reads that file from the running root and
+does not ask the same installation questions again. VM helper settings are
+separate and may be placed in `.vm.env`.
 
-## Intentional non-goals
+## Mutable A/B lifecycle
 
-This is not a reproducible build, package-state reconciler, backup system,
-distribution migration tool, cross-bootstrap system, or unattended fleet
-installer. Mutable changes to the active root are discarded by the next clean
-build unless represented by a module or requested through `preserve_path`.
+Normal use does not require rebuilding or switching slots. The active root may
+be updated and modified like any ordinary Arch or Fedora installation.
+
+`rebuild.sh` always operates on the inactive slot:
+
+1. Detect the running distro and active Btrfs root.
+2. Delete and recreate only the inactive root.
+3. Install a clean native base into it.
+4. Run every module against the candidate.
+5. Copy explicitly preserved machine state.
+6. Generate the candidate's slot-specific UKI.
+7. Reconcile candidate skeleton defaults into persistent home.
+8. Put the candidate first in UEFI `BootOrder`.
+9. Ask whether to reboot into it immediately.
+
+Declining the reboot does not undo activation: the newly built slot is used on
+the next ordinary reboot. The previous root and UKI remain mutable and manually
+bootable from the firmware menu. Automatic boot-health rollback is not
+currently provided.
+
+A failure before activation leaves the running root and firmware order intact.
+Home is mounted only after provisioning and UKI generation succeed.
+
+Arch bootstraps the candidate with the official `linux` package so `pacstrap`
+does not need third-party repository state. The managed-kernel module then
+enables OGC on demand, installs `linux-ogc`, removes `linux`, and records the
+selected package for initial UKI generation and future Pacman kernel hooks.
+
+Fedora bootstraps with its official kernel because OGC publishes Fedora kernel
+RPMs as OCI artifacts rather than a DNF repository. The Fedora OGC plugin pulls
+the three runtime RPMs for the detected Fedora release by content digest. The
+stock kernel remains installed as a recovery fallback, but clean and in-place
+UKI generation explicitly selects the OGC kernel version.
+
+## Modules
+
+Every `modules/**/*.sh` file runs, recursively, in lexical order. A module that
+does not apply must guard itself and exit successfully—for example by checking
+`DISTRO`, CPU/PCI vendor, DMI identity, or another hardware fact. Examples that
+must not execute do not belong below `modules/`.
+
+Modules run as trusted root code in isolated Bash processes inside the
+candidate. They receive `HOME=/etc/skel`, the XDG skeleton paths, `SETUP_ROOT`,
+`MODULE_DIR`, user identity, distro identity, and preservation/reconciliation
+state. They must source `"$SETUP_ROOT/lib/module.sh"` before using the module
+API and must not depend on functions or variables created by another module.
+
+Lexical order is deterministic execution order, not a dependency mechanism.
+Each module declares its own packages and prerequisites.
+
+## Package declarations
+
+The public interface is:
+
+```bash
+packages=(
+    nano
+    fedora:fedora-only-package
+    arch:aur/arch-only-aur-package
+    flathub/org.example.Application
+)
+pkg_install "${packages[@]}"
+```
+
+The grammar has exactly four forms:
+
+```text
+name                    native package on both supported distros
+<distro>:<name>         native package only on that distro
+<source>/<name>         shared source handled by pm/<source>.sh
+<distro>:<source>/<name>
+                        distro-specific source handled by
+                        pm/<distro>/<source>.sh
+```
+
+The first slash separates the source from its opaque package/ref name, so names
+may contain further slashes (for example Flatpak runtime refs).
+
+There is no implicit source fallback:
+
+- `flathub/app.id` resolves only to `pm/flathub.sh`;
+- `fedora:terra/package` resolves only to `pm/fedora/terra.sh`;
+- `arch:aur/package` resolves only to `pm/arch/aur.sh`;
+- `aur/package` is an error because there is no shared `pm/aur.sh`;
+- `arch/package` means an unscoped source named `arch`, not a native package.
+
+Unknown distro scopes and missing plugins are errors, including typos in specs
+that would otherwise be ignored on the current distro.
+
+Use an unscoped native name whenever that exact name exists on Arch and Fedora.
+Do not write both `arch:name` and `fedora:name` in that case. Distro scoping is
+for different names, availability, or sources—not documentation noise.
+
+There is one intentional Arch shorthand: an `arch:lib32-*` native-looking spec
+is dispatched through `pm/arch/multilib.sh`. This enables Multilib only when a
+selected declaration needs a 32-bit package. Packages without the `lib32-`
+prefix, such as Steam, use the explicit `arch:multilib/<name>` form when they
+must come from that repository.
+
+## Package plugins
+
+A plugin implements:
+
+```bash
+pm_enable                  # idempotently prepare its source
+pm_install name...
+pm_is_installed name
+pm_remove name...          # used for temporary build dependencies
+```
+
+`pm_install` calls `pm_enable` before installation. Preparation is demand
+driven: if no selected package spec refers to the plugin, the plugin is never
+loaded, its package-manager dependency is not installed, and its repository is
+not enabled. Enablement must also inspect persistent system state so repeated
+module calls do not repeat setup.
+
+A plugin may install native prerequisites with `pkg_install` and may enable a
+second explicit source with `pkg_repo_enable`. It must not reinterpret another
+plugin's syntax or silently fall back to another source.
+
+Non-native managers install system-wide wherever the manager supports it:
+
+- Flatpak uses the system installation;
+- Cargo uses `/usr/local`;
+- AUR output is installed through Pacman, while its unprivileged build state
+  lives under `/var/lib/system`, not persistent `/home`.
+
+User configuration may still be declared below `/etc/skel`; this is distinct
+from installing package payloads into a user's persistent home.
+
+## Local package recipes
+
+Locally maintained native recipes are data, not package-manager plugins. They
+live at:
+
+```text
+packages/<distro>/<name>/...
+```
+
+The implemented Arch route is `arch:pkgbuild/<name>`, handled by
+`pm/arch/pkgbuild.sh`, which expects `packages/arch/<name>/PKGBUILD`. The AUR
+plugin is independent: it installs `paru` explicitly from Chaotic-AUR. Fedora
+may later use the same directory shape for spec files or another native recipe
+format; no Fedora mechanism is invented until it is needed.
+
+## Files and ownership
+
+Modules can atomically write or append files with install-style metadata:
+
+```bash
+file_write [-m MODE] [-o OWNER] [-g GROUP] /path <<'EOF'
+content
+EOF
+
+file_append [-m MODE] [-o OWNER] [-g GROUP] /path <<'EOF'
+content
+EOF
+```
+
+Replacing a file retains unspecified existing metadata. A new file defaults to
+`0644 root:root`. Static module assets can be piped or redirected into
+`file_write`, avoiding otherwise dangling files copied without explicit
+ownership or permissions.
+
+## Persistent home and selected machine state
+
+Modules write user defaults into `/etc/skel`. After a successful candidate
+build, the active and candidate skeletons are reconciled into the persistent
+home. Candidate declaration changes win, unchanged user values remain, and
+replaced files are backed up. `home_strategy` can override reconciliation for a
+specific path.
+
+The reconciliation engine runs outside the module phase, so its JSON, YAML, and
+TOML tools (`jq` and `yq`) are part of each distro's base package set. Tools
+needed by only specific declarations belong to those modules instead—for
+example, the Gecko browser modules declare `crudini`, Kodi declares
+`xmlstarlet`, and VS Code declares `jq`. There is no catch-all parser module.
+
+`preserve_path` is for selected root-local machine state that must survive a
+clean rebuild, such as machine identity, SSH host keys, network credentials, or
+Bluetooth pairings. It is not a general backup mechanism.
+
+## Non-goals
+
+The project is not a reproducible build, immutable OS, package-state reconciler,
+backup product, cross-distro installer, or unattended fleet provisioner. It
+does not attempt to remove undeclared packages from the running mutable root;
+clean rebuild is the reconciliation boundary.

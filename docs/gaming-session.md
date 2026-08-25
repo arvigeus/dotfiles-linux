@@ -27,20 +27,23 @@ login; select Plasma and sign in normally.
 | SteamOS-Manager | Pinned OGC PowerStation-fork recipe | Terra's equivalent build | System and user daemons enabled; SDDM-only API disabled |
 | Cardwire | OGC Arch repository | Terra | Enabled, initially in safe hybrid mode |
 | ASUS controls | OGC Arch repository | Terra | `asusd`, ROG Control Center, and PPD enabled |
+| Kernel | OGC `linux-ogc` | OGC Fedora RPM artifact | Both final UKIs select OGC |
 
 Arch adds the narrowly scoped OGC and Chaotic-AUR repositories, but never adds
 CachyOS, ChimeraOS, or another distribution's base repository. OGC supplies
-only `asusctl`, ROG Control Center, and Cardwire here; `linux-ogc` is not
-installed. Current OGC Gamescope-session snapshots and `paru` come explicitly
-from Chaotic-AUR. Official Arch repositories retain higher Pacman priority, and
-OGC is ordered above Chaotic-AUR to protect any future package overlap.
+`linux-ogc`, `asusctl`, ROG Control Center, and Cardwire. Current OGC
+Gamescope-session snapshots come explicitly from
+Chaotic-AUR. Official Arch repositories retain higher Pacman priority, and OGC
+is ordered above Chaotic-AUR to protect any future package overlap. The AUR
+plugin installs `paru` explicitly from Chaotic-AUR; it does not build `paru` or
+depend on the tracked-PKGBUILD plugin.
 
-Ordinary `aur/<name>` requests still build from the AUR. Tracked recipes below
-`distros/arch/aur/` are used only through the explicit `local-aur/<name>` route;
+Ordinary `arch:aur/<name>` requests still build from the AUR. Tracked recipes below
+`packages/arch/` are used only through the explicit `arch:pkgbuild/<name>` route;
 they do not silently override an AUR or repository package. PowerStation 0.8.1
 uses that route because the AUR stable binary is still 0.7.0, and the OGC
-SteamOS-Manager fork uses it because no Arch package currently exists. The
-Cardwire recipe remains available as a fallback but is not selected.
+SteamOS-Manager fork uses it because no Arch package currently exists. Cardwire
+comes directly from OGC; no redundant local recipe is retained.
 
 Fedora uses Terra only for the new gaming-session daemons and ASUS/Cardwire
 packages for which Fedora does not provide equivalents. Steam comes from RPM
@@ -179,7 +182,7 @@ Fedora installs a `kernel-install` plugin plus an explicit post-update fallback.
 The inactive root and its UKI are not touched.
 
 The native updater and Plasma Login Manager compatibility helper live below
-`/usr/local/libexec/dotfiles`. Package-owned Steam helper paths are restored
+`/usr/local/libexec/system`. Package-owned Steam helper paths are restored
 after Steam-driven upgrades, after relevant Pacman transactions, and by
 `systemd-tmpfiles` at boot, so a session-package upgrade does not permanently
 reintroduce its Arch-only updater or SDDM-only restart helper.
@@ -198,9 +201,10 @@ rebuild workflow.
 
 ## Deliberate omissions
 
-The build retains the stock distribution kernel, stock Mesa, and stock
-Gamescope. It does not install `linux-ogc`, a CachyOS kernel, a patched Mesa
-stack, `sched_ext` policy, `bpftune`, dmemcg boosters, Steam Deck firmware
+The build selects OGC kernels on Arch and Fedora while retaining Fedora's stock
+kernel as an installed recovery fallback. It keeps stock Mesa and Gamescope and
+does not install a CachyOS kernel, a patched Mesa stack,
+`sched_ext` policy, `bpftune`, dmemcg boosters, Steam Deck firmware
 helpers, Bazzite's image updater, or a console autologin service. Those pieces
 either belong to an image-based distribution, replace the UKI-owning kernel
 backend, or are hardware-specific handheld tuning rather than requirements for

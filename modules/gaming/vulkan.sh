@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
+set -Eeuo pipefail
+
+source "$SETUP_ROOT/lib/module.sh"
+
 
 packages=(
-	vkbasalt
+	arch:vkbasalt
+	fedora:vkBasalt
 	arch:lib32-vkbasalt
 	fedora:vkBasalt.i686
 

@@ -24,7 +24,7 @@ webapp_install() {
 		return 1
 	}
 
-	file_write "/usr/local/bin/$bin" 0755 <<EOF
+	file_write -m 0755 "/usr/local/bin/$bin" <<EOF
 #!/bin/sh
 profile="\${XDG_DATA_HOME:-\$HOME/.local/share}/webapps/$slug/profile"
 mkdir -p "\$profile"

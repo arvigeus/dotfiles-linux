@@ -10,6 +10,8 @@ source "$SETUP_ROOT/lib/flatpak.sh"
 
 packages=(
 	flathub/app.zen_browser.zen
+	arch:aur/crudini
+	fedora:crudini
 )
 pkg_install "${packages[@]}"
 flatpak_alias zen-browser app.zen_browser.zen

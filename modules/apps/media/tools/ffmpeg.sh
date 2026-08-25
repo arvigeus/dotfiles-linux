@@ -6,7 +6,8 @@ set -Eeuo pipefail
 source "$SETUP_ROOT/lib/module.sh"
 
 packages=(
-	ffmpeg
+	arch:ffmpeg
+	fedora:rpmfusion/ffmpeg
 )
 
 pkg_install "${packages[@]}"

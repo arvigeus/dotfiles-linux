@@ -4,7 +4,6 @@ set -Eeuo pipefail
 PROJECT_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck source=installer/common.sh
 source "$PROJECT_ROOT/installer/common.sh"
-load_config
 source "$PROJECT_ROOT/installer/disk.sh"
 source "$PROJECT_ROOT/installer/base-system.sh"
 source "$PROJECT_ROOT/installer/modules.sh"
@@ -23,13 +22,15 @@ trap cleanup EXIT INT TERM
 
 main() {
 	require_root
+	require_commands findmnt stat
+	load_rebuild_config
 	require_uefi
 	require_commands \
 		awk blkid btrfs chroot cryptsetup efibootmgr findmnt flock mount mountpoint umount \
-		xargs
+		systemctl xargs
 	distro_require_rebuild_commands
 	log "Native distribution: $DISTRO ($PACKAGE_MANAGER)"
-	[[ -b $MAPPER_DEVICE ]] || die "$MAPPER_DEVICE is not available; check CRYPT_NAME in .env"
+	[[ -b $MAPPER_DEVICE ]] || die "$MAPPER_DEVICE is not available"
 	[[ -b $ESP_PARTITION ]] || die "$ESP_PARTITION is not available"
 
 	exec 9>"/run/$PROJECT_ID.lock"
@@ -44,6 +45,7 @@ main() {
 	mount_target_slot "$target"
 	install_base_system
 	configure_base_system "$target"
+	write_system_config
 	copy_login_password
 	run_modules
 	preserve_active_state
@@ -55,7 +57,19 @@ main() {
 	activate_slot "$target" "$active"
 
 	log "Built $target and placed it first in UEFI BootOrder"
-	log "Reboot to try it; the firmware menu still contains the $active fallback"
+	log "The next reboot will enter $target; $active remains available from the firmware menu"
+
+	local answer=
+	if [[ -r /dev/tty ]]; then
+		read -r -p "Reboot into $target now? [y/N]: " answer </dev/tty
+	fi
+	if [[ $answer == [yY] || $answer == [yY][eE][sS] ]]; then
+		cleanup_mounts
+		log "Rebooting into $target"
+		systemctl reboot
+	else
+		log "Reboot postponed; $target remains selected for the next boot"
+	fi
 }
 
 main "$@"

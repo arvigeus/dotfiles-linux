@@ -10,7 +10,7 @@ packages=(
     fedora:libvirt-daemon-kvm
     arch:qemu-desktop
     fedora:qemu-kvm
-    arch:dnsmasq
+	dnsmasq
 )
 pkg_install "${packages[@]}"
 

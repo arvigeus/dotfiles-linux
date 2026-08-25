@@ -5,8 +5,11 @@ set -Eeuo pipefail
 source "$SETUP_ROOT/lib/module.sh"
 
 packages=(
-	nerd-fonts # icons, programming
-	adwaita-fonts
+	# Nerd Fonts symbols and Adwaita UI fonts use different package names.
+	arch:ttf-nerd-fonts-symbols-mono
+	fedora:terra/nerdfontssymbolsonly-nerd-fonts
+	arch:adwaita-fonts
+	fedora:adwaita-fonts-all
 )
 
 pkg_install "${packages[@]}"

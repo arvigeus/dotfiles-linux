@@ -23,7 +23,7 @@ if ((EUID != 0)); then
 fi
 
 # Do not race a terminal-driven native update or another Steam client request.
-exec 9>/run/dotfiles-native-update.lock
+exec 9>/run/system-native-update.lock
 flock -n 9 || {
 	printf 'Another native system update is already running.\n' >&2
 	exit 7
@@ -45,8 +45,8 @@ arch_check() {
 		;;
 	esac
 
-	aur_output=$(sudo --user dotfiles-aur \
-		env HOME=/home/dotfiles-aur \
+	aur_output=$(sudo --user system-aur \
+		env HOME=/var/lib/system/aur \
 		paru -Qua --devel --color never 2>/dev/null)
 	aur_status=$?
 	case $aur_status in
@@ -86,11 +86,11 @@ arch)
 		arch_check
 		exit $?
 	fi
-	sudo --user dotfiles-aur \
-		env HOME=/home/dotfiles-aur \
+	sudo --user system-aur \
+		env HOME=/var/lib/system/aur \
 		paru --noconfirm --needed --skipreview --noupgrademenu --devel -Syu
 	status=$?
-	/usr/local/libexec/dotfiles/restore-gaming-session-overrides || exit $?
+	/usr/local/libexec/system/restore-gaming-session-overrides || exit $?
 	((status == 0)) || exit "$status"
 	exit 7
 	;;
@@ -101,11 +101,11 @@ fedora)
 	fi
 	dnf -y upgrade --refresh
 	status=$?
-	/usr/local/libexec/dotfiles/restore-gaming-session-overrides || exit $?
+	/usr/local/libexec/system/restore-gaming-session-overrides || exit $?
 	((status == 0)) || exit "$status"
 	# This is also a fallback for transactions where kernel-install was not
 	# called. It atomically refreshes the current slot's direct-boot UKI.
-	/usr/local/libexec/dotfiles-refresh-uki || exit $?
+	/usr/local/libexec/system-refresh-uki || exit $?
 	exit 7
 	;;
 *)
