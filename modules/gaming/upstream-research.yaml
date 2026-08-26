@@ -1,0 +1,357 @@
+schema: 1
+reviewed_at: 2026-08-25
+hardware_scope:
+  system: ASUS ROG Zephyrus G14 GA402RK-L8149
+  cpu: AMD Ryzen 9 6900HS
+  gpu: AMD Radeon 680M plus Radeon RX 6800S
+  controllers:
+    - original Steam Controller
+    - Steam Deck
+
+reintroduction_policy:
+  requires_explicit_user_confirmation: true
+  reason: Removed power and gaming components can conflict with the single-owner baseline or add privileged failure modes.
+  prompt_template: "Are you sure you want to reintroduce COMPONENT? It was removed because PRIOR_RATIONALE. The changed evidence is CHANGED_EVIDENCE; remaining risks are RISKS."
+  gates:
+    cardwire:
+      prior_rationale: Early eBPF-LSM GPU blocking adds a privileged switching authority and can deny GPU access.
+      changed_evidence_required: A measured RX 6800S runtime-suspend failure remains after render-node holders and firmware modes are checked, and a stable Cardwire release explicitly solves that case.
+    lact:
+      prior_rationale: A resident GPU tuning daemon overlaps laptop firmware control and monitoring can prevent dGPU runtime suspend.
+      changed_evidence_required: A measured dGPU power or thermal problem cannot be controlled through ASUS firmware, and a safe GA402-specific LACT configuration is validated on AC and battery.
+    ryzenadj:
+      prior_rationale: Direct SMU and /dev/mem writes drift against firmware policy and the former preset set only a temperature target, not a bounded power envelope.
+      changed_evidence_required: The installed kernel and firmware expose no usable ASUS PPT controls, and conservative GA402 limits have been measured and recovery-tested.
+    ogc_kernel:
+      prior_rationale: No required out-of-tree patch was identified; replacing distro kernels increases packaging, update, and UKI risk.
+      changed_evidence_required: A specific GA402 or Gamescope regression is documented and fixed only by a named patch absent from both current stock kernels.
+    gamemode:
+      prior_rationale: Its governor and platform-profile actions overlap asusd and no local benefit was measured.
+      changed_evidence_required: Repeatable per-game frame-time data shows a benefit with all overlapping power/profile actions disabled.
+
+sources:
+  bazzite:
+    repository: https://github.com/ublue-os/bazzite
+    branch: main
+    commit: f168cc5280160bcebdde08e32721b025983faae4
+    commit_date: 2026-08-24T01:19:27-07:00
+    reviewed_at: 2026-08-25
+    areas:
+      - Containerfile
+      - system_files/deck/shared/etc/scx_loader/config.toml
+      - system_files/desktop/shared/etc/systemd/zram-generator.conf
+      - system_files/desktop/shared/usr/libexec/hwsupport/powerstation-hardware
+      - system_files/desktop/shared/usr/libexec/hwsupport/steamos-manager-hardware
+    adopted:
+      - gamescope Steam session as a separate login-session concept
+      - compressed swap for memory-pressure resilience
+    adapted:
+      - session lifecycle without OSTree, SDDM, updater, or handheld daemons
+    rejected:
+      - immutable image and A/B updater integration
+      - Deck and handheld hardware services
+      - patched kernel, Mesa, PipeWire, BlueZ, and Xwayland package set
+      - PowerStation and SteamOS Manager hardware helpers, whose device lists omit GA402
+    watch:
+      - sched-ext and dmemcg tuning after machine-specific benchmarks
+
+  nobara_images:
+    repository: https://github.com/Nobara-Project/nobara-images
+    branch: main
+    commit: ab64ebbb238401a1c147413a549d96fb0046574d
+    commit_date: 2026-04-24T23:38:23Z
+    reviewed_at: 2026-08-25
+    areas:
+      - ISO-ready-flattened-kickstarts/43/flat-nobara-live-official-43.ks
+      - ISO-ready-flattened-kickstarts/43/flat-nobara-live-steam-htpc-43.ks
+      - ISO-ready-flattened-kickstarts/43/flat-nobara-live-steam-handheld-43.ks
+    adopted:
+      - separation of desktop, HTPC, and handheld responsibilities
+    rejected:
+      - broad preinstalled gaming package collection
+      - handheld-only input, power, and Steam Deck support
+
+  nobara_steam_packages:
+    repository: https://github.com/Nobara-Project/steamdeck-edition-packages
+    branch: main
+    commit: 98383d8ba707b8db26453e68e70f2ee3d3cd7fb1
+    commit_date: 2026-03-21T14:25:33-06:00
+    reviewed_at: 2026-08-25
+    areas:
+      - gamescope-session-plus/usr/bin/gamescope-session-plus
+      - gamescope-session-plus/usr/lib/systemd/user/gamescope-session-plus@.service
+      - gamescope-session-plus/usr/share/gamescope-session-plus/gamescope-session-plus
+      - gamescope-session-steam/usr/share/gamescope-session-plus/sessions.d/steam
+      - gamescope-session-steam/usr/bin/steamos-session-select
+    adapted:
+      - direct process ownership and clean failure back to the login manager
+    rejected:
+      - distribution updater and session-switching hooks
+      - Steam Deck flags and handheld environment overrides
+
+  chimeraos:
+    repository: https://github.com/ChimeraOS/chimeraos
+    branch: master
+    commit: 89b58ba69f52b4723a7bff472b9445b8b220c91f
+    commit_date: 2026-07-22T08:07:54-04:00
+    reviewed_at: 2026-08-25
+    areas:
+      - manifest
+      - rootfs/etc/lightdm/lightdm.conf.d/10-chimeraos-session.conf
+      - rootfs/usr/bin/chimera-session
+      - rootfs/usr/lib/os-session-select
+      - rootfs/usr/share/wayland-sessions/steamos.desktop
+    adopted:
+      - controller-first Gamescope session as a login-manager session
+    rejected:
+      - LightDM autologin and single-purpose console policy
+      - frzr image management, emulator bundle, and handheld services
+
+  cachyos_handheld:
+    repository: https://github.com/CachyOS/CachyOS-Handheld
+    branch: main
+    commit: 120cebfa10d3dd15fd56be8606141d3105e7da52
+    commit_date: 2026-05-05T17:11:06+02:00
+    reviewed_at: 2026-08-25
+    areas:
+      - etc/plasmalogin.conf.d/steam-deckify.conf
+      - etc/systemd/logind.conf.d/steam-deckify.conf
+      - usr/lib/hwsupport/valve-hardware
+      - usr/lib/sysctl.d/20-steamos-customizations.conf
+      - usr/share/libalpm/scripts/steam-force-handheld
+    rejected:
+      - forced Steam Deck mode and dedicated deck user
+      - handheld HHD, power-button, input, and audio policy
+      - console autologin policy
+
+  cachyos_pkgbuilds:
+    repository: https://github.com/CachyOS/CachyOS-PKGBUILDS
+    branch: master
+    commit: 8cdc4e587cd2a8a9af8a84e4a4de96c9b5dd786f
+    commit_date: 2026-08-25T11:57:20+08:00
+    reviewed_at: 2026-08-25
+    areas:
+      - cachyos-gaming-meta/PKGBUILD
+      - cachyos-gaming-meta/99-splitlock.conf
+      - scx/scx-scheds/scx-scheds/PKGBUILD
+      - cachyos-ananicy-rules/PKGBUILD
+    already_covered:
+      - ordinary Vulkan, Wine, and compatibility dependencies
+    rejected:
+      - optimized repository and kernel as prerequisites
+      - blanket split-lock, ananicy, and scheduler tuning
+    watch:
+      - scx_lavd after upstream maturity and GA402 benchmark evidence
+
+  asusctl:
+    repository: https://github.com/OpenGamingCollective/asusctl
+    branch: main
+    commit: 9d53a53c00c0bb955b73cc08156db1201b7905ad
+    commit_date: 2026-08-24T23:34:11+05:00
+    reviewed_at: 2026-08-25
+    areas:
+      - README.md
+      - MANUAL.md
+      - docs/distributions/arch.md
+      - docs/distributions/fedora.md
+      - docs/faq/gpu-switching.md
+      - data/asusd.service
+      - data/asus-shutdown.service
+    model_evidence:
+      url: https://gitlab.com/asus-linux/asusctl/-/issues/301
+      note: GA402RK reported platform profiles, fan curves, charge limit, panel overdrive, and dGPU disable, but no GPU MUX at that revision
+    adopted:
+      - asusd as sole platform-profile and CPU-EPP authority
+      - asus-shutdown for safe queued firmware GPU-mode changes
+      - asus-armoury discovery for firmware-exposed PPT and fan controls
+    rejected:
+      - simultaneous power-profiles-daemon or tuned ownership
+      - hard-coded fan curves or PPT values without hardware inspection
+
+  cardwire:
+    repository: https://github.com/OpenGamingCollective/cardwire
+    branch: main
+    commit: 7851b5dbc58017186340c8c01955078d02491144
+    commit_date: 2026-08-21T13:27:10+02:00
+    reviewed_at: 2026-08-25
+    areas:
+      - README.md
+      - assets/cardwired.service
+      - crates/cardwire-daemon/src/tasks/watch_power_state.rs
+    rejected:
+      - early-stage eBPF-LSM GPU device blocking on a workstation
+    watch:
+      - smart and external-display switching after stabilization
+
+  gamescope_session:
+    repository: https://github.com/OpenGamingCollective/gamescope-session
+    branch: main
+    commit: 39c835136c242df16693431a55f1340280844e48
+    commit_date: 2026-08-21T06:54:20+02:00
+    reviewed_at: 2026-08-25
+    areas:
+      - usr/bin/gamescope-session-plus
+      - usr/lib/systemd/user/gamescope-session-plus@.service
+      - usr/share/gamescope-session-plus/gamescope-session-plus
+    adapted:
+      - dedicated session process tree and two Xwayland servers
+    rejected:
+      - device quirks and distro-specific session framework
+
+  gamescope_session_steam:
+    repository: https://github.com/OpenGamingCollective/gamescope-session-steam
+    branch: main
+    commit: 55e541aa3adb80ee751220c886b9d133504f6e20
+    commit_date: 2026-08-03T11:55:03-07:00
+    reviewed_at: 2026-08-25
+    areas:
+      - usr/share/gamescope-session-plus/sessions.d/steam
+      - usr/share/wayland-sessions/gamescope-session-steam.desktop
+      - usr/bin/steamos-session-select
+    adapted:
+      - Steam Gamepad UI as session shell
+    rejected:
+      - SteamOS update and firmware helpers
+      - Steam Deck-specific client flags
+
+  gamescope:
+    repository: https://github.com/ValveSoftware/gamescope
+    branch: master
+    commit: b769931518826e206894ec69aca678012a1655e1
+    commit_date: 2026-08-24T15:48:58-07:00
+    reviewed_at: 2026-08-25
+    areas:
+      - src/main.cpp
+      - layer/VkLayer_FROG_gamescope_wsi.cpp
+      - scripts/README.md
+    adopted:
+      - --backend drm
+      - --steam
+      - --xwayland-count 2
+      - --adaptive-sync
+      - --mangoapp
+      - dynamic --prefer-output
+      - conditional --prefer-vk-device
+    adapted:
+      - --hdr-enabled is explicit opt-in pending display validation
+
+  gamemode:
+    repository: https://github.com/FeralInteractive/gamemode
+    branch: master
+    commit: a74b8106a2236d1f2696aa44c93bc4c8ef13b42e
+    commit_date: 2026-06-15T13:02:24+01:00
+    reviewed_at: 2026-08-25
+    areas:
+      - README.md
+      - daemon/gamemode-config.c
+      - daemon/gamemode-context.c
+      - common/common-power.c
+    rejected:
+      - another platform-profile and governor owner alongside asusd
+    watch:
+      - measured per-game use with power controls disabled in GameMode config
+
+  steam_devices:
+    repository: https://github.com/ValveSoftware/steam-devices
+    branch: master
+    commit: 22ec85e5ff5ea2e15c56d71a41bcbef46356cd60
+    commit_date: 2026-06-25T10:26:36-05:00
+    reviewed_at: 2026-08-25
+    areas:
+      - 60-steam-input.rules
+      - 60-steam-vr.rules
+    adopted:
+      - distribution packages providing Valve controller udev permissions
+
+  zram_generator:
+    repository: https://github.com/systemd/zram-generator
+    branch: main
+    commit: 7855941d1a06257075e7f5a268b1f7bb702d5466
+    commit_date: 2025-05-25T21:48:36+02:00
+    reviewed_at: 2026-08-25
+    areas:
+      - README.md
+      - man/zram-generator.conf.md
+    adopted:
+      - upstream default half-RAM sizing capped at 4 GiB
+
+  hhd:
+    repository: https://github.com/hhd-dev/hhd
+    branch: master
+    commit: 9687f5e459b513da2e49d993c49544d35146262c
+    commit_date: 2026-08-23T19:42:51+02:00
+    reviewed_at: 2026-08-25
+    areas:
+      - readme.md
+      - src/hhd/device/generic/__init__.py
+      - src/adjustor/drivers/asus/settings.yml
+    rejected:
+      - Windows-handheld input and hardware management; GA402 is unsupported
+
+  inputplumber:
+    repository: https://github.com/ShadowBlip/InputPlumber
+    branch: main
+    tag: v0.78.1
+    commit: 23f84b78521a4e12f2ff7b16fa9e0dc03ccb1846
+    commit_date: 2026-08-21T06:12:08Z
+    reviewed_at: 2026-08-25
+    areas:
+      - README.md
+      - rootfs/usr/lib/systemd/system/inputplumber.service
+      - rootfs/usr/lib/udev/hwdb.d/60-inputplumber-autostart.hwdb
+    rejected:
+      - virtual-controller composition for internal handheld controls absent on GA402
+
+  powerstation:
+    repository: https://github.com/ShadowBlip/PowerStation
+    branch: main
+    tag: v0.8.1
+    commit: 350804f51c6de551b60df6ac57a5bb9ed42e3b6e
+    commit_date: 2026-02-21T07:14:30Z
+    reviewed_at: 2026-08-25
+    areas:
+      - README.md
+      - rootfs/usr/lib/systemd/system/powerstation.service
+      - rootfs/usr/share/powerstation/platform/amd_apu_database.toml
+      - src/performance/gpu/asus/asus_wmi.rs
+    rejected:
+      - handheld-oriented generic TDP daemon in place of ASUS firmware controls
+
+  opengamepadui:
+    repository: https://github.com/ShadowBlip/OpenGamepadUI
+    branch: main
+    tag: v0.46.0
+    commit: b149644f46b71e175a2ad223e84c18361596691e
+    commit_date: 2026-07-25T23:39:53Z
+    reviewed_at: 2026-08-25
+    areas:
+      - README.md
+      - core/systems/power/power_manager.gd
+      - core/systems/input/input_manager.gd
+    rejected:
+      - replacing the requested Steam Gamepad UI with an early-stage shell
+    watch:
+      - maturity as an optional non-Steam shell
+
+  zephyrusctl_local:
+    repository: https://github.com/arvigeus/zephyrusctl
+    branch: main
+    commit: 3d1b09cafa30f46170c814a8e1ab6eea9c0d0a91
+    commit_date: 2026-07-09T02:49:56+07:00
+    reviewed_at: 2026-08-25
+    areas:
+      - README.md
+      - zephyrusctl.sh
+      - systemd/zephyrusctl.service
+      - systemd/zephyrusctl.timer
+    adapted:
+      - explicit recognition that quiet battery use and bounded gaming thermals need separate, measurable policies
+      - periodic recording of CPU, dGPU, fan, battery, profile, and runtime-PM state through a read-only observer
+    rejected:
+      - RX 6800S selection using 1002:73ff, which does not match this GA402RK device 1002:73ef
+      - gaming preset that sets an 85 C CPU target without STAPM, fast-PPT, or slow-PPT bounds
+      - hard-coded PCI slot, internal display name, and refresh rate
+      - repeated RyzenAdj writes every 30 seconds to fight firmware-policy drift
+      - powertop --auto-tune as an opaque, reboot-scoped battery policy
+    watch:
+      - measured findings that justify a small asusd/asus-armoury preset after hardware data is collected

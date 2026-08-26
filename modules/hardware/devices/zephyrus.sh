@@ -9,72 +9,46 @@ source "$SETUP_ROOT/lib/hardware.sh"
 dmi_matches asus || exit 0
 dmi_matches zephyrus || dmi_matches 'rog' || exit 0
 
+file_write -m 0755 /usr/local/bin/system-g14-observe \
+	<"$MODULE_DIR/system-g14-observe"
+
 case "$DISTRO" in
 arch)
-	# The managed kernel is linux-ogc. Do not replace it opportunistically with
-	# linux-g14 in this hardware-specific module and desynchronize the UKI.
-	if pkg_native_is_installed switcheroo-control; then
-		pkg_native_remove switcheroo-control
-	fi
 	pkg_install \
 		arch:ogc/asusctl \
 		arch:ogc/rog-control-center \
-		arch:power-profiles-daemon \
-		arch:ogc/cardwire
+		arch:switcheroo-control
 	;;
 fedora)
-	if pkg_is_installed tuned-ppd; then
-		dnf -y swap --allowerasing tuned-ppd power-profiles-daemon
-	else
-		pkg_install power-profiles-daemon
-	fi
-	pkg_install fedora:terra/asusctl fedora:terra/asusctl-rog-gui
-	if pkg_native_is_installed switcheroo-control; then
-		dnf -y swap --allowerasing switcheroo-control cardwire
-	else
-		pkg_install fedora:terra/cardwire
-	fi
-	pkg_install fedora:terra/cardwire-gui
+	pkg_install \
+		fedora:terra/asusctl \
+		fedora:terra/asusctl-rog-gui \
+		fedora:switcheroo-control
 	;;
 esac
 
+# asusd is the sole platform-profile and CPU-EPP owner. ASUS upstream warns
+# that PPD or tuned running at the same time races on those same interfaces;
+# masks also prevent desktop D-Bus activation from starting them later.
+for service in \
+	power-profiles-daemon.service \
+	tuned.service \
+	tuned-ppd.service
+do
+	systemctl disable "$service" 2>/dev/null || true
+	systemctl mask "$service"
+done
+
 systemctl enable \
 	asusd.service \
-	cardwired.service \
-	power-profiles-daemon.service
+	asus-shutdown.service \
+	switcheroo-control.service
 
-# GA402RK-L8149 has a 2560x1600 120 Hz Adaptive-Sync panel and an RX 6800S.
-# Scope these values to the Gamescope sessions so Plasma remains user-owned.
+# Prefer the RX 6800S when firmware exposes it. The session launcher falls back
+# to automatic GPU selection in integrated mode, where the device is absent.
 if dmi_matches ga402; then
-	for session in steam ogui-steam; do
-		file_write "/etc/gamescope-session-plus/sessions.d/$session" <<'EOF'
-ADAPTIVE_SYNC=1
-PANEL_TYPE=internal
-CUSTOM_REFRESH_RATES=60,120
-STEAM_DISPLAY_REFRESH_LIMITS=60,120
-VULKAN_ADAPTER=1002:73ef
+	file_write /etc/system/gaming-session.conf <<'EOF'
+# AMD Radeon RX 6800S (GA402RK). Use "auto" to prefer the active boot GPU.
+SYSTEM_GAMING_GPU=1002:73ef
 EOF
-	done
 fi
-
-file_write "$HOME/.config/rog/rog-control-center.cfg" <<'EOF'
-(
-    run_in_background: true,
-    startup_in_background: true,
-    enable_tray_icon: true,
-    ac_command: "",
-    bat_command: "",
-    dark_mode: true,
-    start_fullscreen: false,
-    fullscreen_width: 1920,
-    fullscreen_height: 1080,
-    notifications: (
-        enabled: false,
-        receive_notify_gfx: true,
-        receive_notify_gfx_status: true,
-    ),
-)
-EOF
-install -d -m 0755 "$HOME/.config/autostart"
-ln -sfn /usr/share/applications/rog-control-center.desktop \
-	"$HOME/.config/autostart/rog-control-center.desktop"

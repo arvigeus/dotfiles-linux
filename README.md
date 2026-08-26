@@ -151,7 +151,7 @@ OVMF variable files when testing Arch and Fedora.
 
 Fedora-specific backend assumptions and validation points are documented in
 [docs/fedora.md](docs/fedora.md). Gaming-session details are in
-[docs/gaming-session.md](docs/gaming-session.md).
+[modules/gaming/README.md](modules/gaming/README.md).
 
 ## Current limits
 

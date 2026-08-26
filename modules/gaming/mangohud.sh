@@ -11,3 +11,21 @@ packages=(
 )
 
 pkg_install "${packages[@]}"
+
+# Installing MangoHud does not inject it globally. This compact default is used
+# only when a game or launcher explicitly requests the overlay.
+file_write "$HOME/.config/MangoHud/MangoHud.conf" <<'EOF'
+position=top-left
+fps
+frametime
+gpu_stats
+gpu_temp
+gpu_power
+cpu_stats
+cpu_temp
+ram
+vram
+engine_version
+wine
+toggle_hud=Shift_R+F12
+EOF

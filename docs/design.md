@@ -97,16 +97,13 @@ currently provided.
 A failure before activation leaves the running root and firmware order intact.
 Home is mounted only after provisioning and UKI generation succeed.
 
-Arch bootstraps the candidate with the official `linux` package so `pacstrap`
-does not need third-party repository state. The managed-kernel module then
-enables OGC on demand, installs `linux-ogc`, removes `linux`, and records the
-selected package for initial UKI generation and future Pacman kernel hooks.
-
-Fedora bootstraps with its official kernel because OGC publishes Fedora kernel
-RPMs as OCI artifacts rather than a DNF repository. The Fedora OGC plugin pulls
-the three runtime RPMs for the detected Fedora release by content digest. The
-stock kernel remains installed as a recovery fallback, but clean and in-place
-UKI generation explicitly selects the OGC kernel version.
+Arch and Fedora bootstrap and retain their official stock kernels. Arch's UKI
+preset and Pacman hook track the configured bootstrap package (normally
+`linux`); Fedora selects the newest installed stock kernel and its
+`kernel-install` hook refreshes only the running slot's UKI. Third-party gaming
+kernels are not part of the platform contract: current stock kernels carry the
+required AMD, Gamescope, and ASUS `asus-armoury` support without adding another
+repository and kernel supply chain.
 
 ## Modules
 

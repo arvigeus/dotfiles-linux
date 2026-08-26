@@ -24,8 +24,8 @@ and `systemd-ukify`. It deliberately does not install a graphical environment.
 
 ## UKI
 
-After the module phase installs the OGC Fedora kernel artifact, the backend
-selects the newest installed `-ogc` kernel and invokes dracut with:
+The backend selects the newest installed Fedora stock kernel and invokes dracut
+with:
 
 - `--uefi --ukify` and an explicit kernel image;
 - `--no-hostonly` for a generic image;
@@ -38,24 +38,11 @@ The output is atomically placed at
 `EFI/Linux/system-a.efi` or `system-b.efi` and is registered
 directly with UEFI.
 
-OGC publishes Fedora RPMs as content-addressed OCI layers rather than a DNF
-repository. `pm/fedora/ogc.sh` downloads only the `kernel`, `kernel-core`, and
-`kernel-modules` layers for the detected Fedora release and verifies every blob
-against its manifest digest before installation. Upstream currently publishes
-`fc43` and `fc44` streams; other Fedora releases fail explicitly instead of
-silently using an incompatible artifact. Fedora's stock kernel remains
-installed as a recovery fallback but is not selected for the managed UKI.
-The plugin authenticates its download through GHCR TLS and checks each layer's
-SHA-256 digest from the OCI manifest. It does not yet independently verify the
-upstream Sigstore signature; add that verification before treating this as a
-hardened supply-chain path for real hardware.
-
 The installed mutable root also contains a `kernel-install` plugin and
 `system-refresh-uki` helper. A native kernel installation regenerates the UKI
-for the currently mounted A/B slot using the newest OGC kernel, and Steam's
-native updater invokes the helper once more after a DNF transaction as a
-fallback. Neither path modifies the inactive slot. The initial clean build
-continues to use the offline backend path above.
+for the currently mounted A/B slot using the newest stock kernel. Neither path
+modifies the inactive slot. The initial clean build continues to use the
+offline backend path above.
 
 ## SELinux
 
@@ -102,8 +89,8 @@ this development environment**. Validate these assumptions in a disposable VM:
 9. Kernel package scriptlets in the installroot do not require a configured
    GRUB/systemd-boot boot manager; the explicitly generated UKI is sufficient.
 10. Fedora kernel transactions invoke the installed `kernel-install` plugin,
-    its OGC selection works when a stock kernel is also installed, and its
-    dracut command atomically replaces only the running slot's UKI.
+    select the newest stock kernel, and atomically replace only the running
+    slot's UKI.
 
 Validate Fedora bootstrap and rebuild, then repeat the same two flows for Arch
 using separate disposable VM disks and OVMF state. Do not treat successful UKI
@@ -119,9 +106,5 @@ fallback works.
 - Fedora `systemd-boot-unsigned` package:
   <https://packages.fedoraproject.org/pkgs/systemd/systemd-boot-unsigned/>
 - Fedora `yq` package: <https://packages.fedoraproject.org/pkgs/yq/yq/>
-- OGC kernel package sources and Fedora build workflow:
-  <https://github.com/OpenGamingCollective/kernel-packages>
-- OGC Fedora OCI package:
-  <https://github.com/orgs/OpenGamingCollective/packages/container/package/kernel-packages-fedora>
 - Red Hat SELinux relabel guidance:
   <https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/10/html/using_selinux/changing-selinux-states-and-modes>

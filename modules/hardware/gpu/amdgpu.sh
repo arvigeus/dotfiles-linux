@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## AMD GPU Mesa/Vulkan userspace and LACT
+## AMD GPU Mesa/Vulkan userspace
 ## https://wiki.archlinux.org/title/AMDGPU
 set -Eeuo pipefail
 
@@ -11,7 +11,6 @@ pci_vendor_present 0x1002 || exit 0
 packages=(
 	radeontop
 	nvtop
-	arch:lact
 	arch:mesa
 	arch:lib32-mesa
 	arch:vulkan-radeon
@@ -20,13 +19,16 @@ packages=(
 	arch:lib32-vulkan-icd-loader
 	arch:vulkan-mesa-layers
 	arch:lib32-vulkan-mesa-layers
-	fedora:lact/lact
+	fedora:mesa-libGL
+	fedora:mesa-dri-drivers
+	fedora:mesa-vulkan-drivers
+	fedora:vulkan-loader
 	fedora:mesa-libGL.i686
 	fedora:mesa-dri-drivers.i686
 	fedora:mesa-vulkan-drivers.i686
+	fedora:vulkan-loader.i686
 )
 pkg_install "${packages[@]}"
-systemctl enable lactd.service
 
 # ROCm remains opt-in: Vulkan covers the original local-inference use case and
 # ROCm support depends on the exact GPU generation.

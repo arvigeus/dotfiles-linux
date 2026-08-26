@@ -57,15 +57,8 @@ distro_configure_base_system() {
 }
 
 fedora_kernel_version() {
-	local version pattern='*'
-	if [[ -f $TARGET_ROOT/etc/$PROJECT_ID/kernel-flavor ]]; then
-		case $(<"$TARGET_ROOT/etc/$PROJECT_ID/kernel-flavor") in
-		ogc) pattern='*-ogc*' ;;
-		*) die "Unknown managed Fedora kernel flavor" ;;
-		esac
-	fi
+	local version
 	version=$(find "$TARGET_ROOT/usr/lib/modules" -mindepth 1 -maxdepth 1 -type d \
-		-name "$pattern" \
 		-printf '%f\n' | sort -V | tail -n 1)
 	[[ -n $version ]] || die "Could not find an installed Fedora kernel"
 	printf '%s\n' "$version"

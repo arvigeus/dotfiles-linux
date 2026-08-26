@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## Selectable SteamOS-style Gamescope session and gaming support
+## Shared text/input dependencies for desktop and gaming sessions
 set -Eeuo pipefail
 
 source "$SETUP_ROOT/lib/module.sh"
@@ -9,8 +9,6 @@ packages=(
 	ibus
 	arch:noto-fonts
 	arch:ttf-dejavu
-	arch:pacman-contrib
-	arch:fakeroot
 	fedora:google-noto-sans-fonts
 	fedora:dejavu-sans-fonts
 )
