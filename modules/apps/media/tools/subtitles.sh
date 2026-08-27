@@ -8,6 +8,7 @@ source "$SETUP_ROOT/lib/flatpak.sh"
 
 packages=(
 	flathub/org.kde.subtitlecomposer
+	# Alternative: flathub/io.otsaloma.gaupol
 )
 pkg_install "${packages[@]}"
 flatpak_alias subtitlecomposer org.kde.subtitlecomposer

@@ -281,6 +281,10 @@ The stock scheduler is used. `ananicy-cpp`, `scx_lavd`, IRQ scripts, and gaming
 sysctls were not adopted without GA402 benchmarks. CachyOS's tuned kernel/repo
 is an integrated product choice, not a list of portable settings.
 
+The installer does set `mitigations=off` in both distro UKIs as an explicit
+owner-selected workstation security tradeoff. It is not a measured gaming
+optimization, and it weakens isolation from untrusted local code.
+
 `zram-generator` supplies one compressed swap device using upstream defaults:
 half of RAM capped at 4 GiB. This improves behavior during shader compilation
 or memory spikes without adding an OOM daemon or VM sysctl folklore. Zram does

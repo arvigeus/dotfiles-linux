@@ -56,6 +56,9 @@ LUKS2 partition
 A and B are mutable Btrfs subvolumes, not separate disk partitions. Home is a
 third, persistent subvolume. Firmware boots slot-specific unified kernel images
 directly; the project does not install GRUB or systemd-boot as a boot manager.
+Both distro backends deliberately add `mitigations=off` to the UKI command line
+for this personal workstation. This disables classes of CPU vulnerability
+mitigations and weakens isolation from untrusted local code.
 
 Bootstrap destructively creates the layout and installs slot A. It creates B as
 an empty subvolume but does not create a firmware entry that points to a missing
@@ -71,6 +74,11 @@ The non-secret answers are stored as root-owned system state in
 `/etc/system/config`. Rebuild reads that file from the running root and
 does not ask the same installation questions again. VM helper settings are
 separate and may be placed in `.vm.env`.
+
+The account password remains available for the lock screen, TTY, SSH, and
+other explicit authentication. The configured workstation policy grants that
+user passwordless sudo and passwordless interactive Plasma Login Manager
+access; LUKS unlock and the lock screen are the intended physical boundaries.
 
 ## Mutable A/B lifecycle
 

@@ -68,7 +68,7 @@ distro_generate_uki() {
 		die "Managed Arch kernel image not found: $kernel_image"
 
 	cat >"$TARGET_ROOT/etc/kernel/cmdline" <<EOF
-rd.luks.name=$luks_uuid=$CRYPT_NAME root=/dev/mapper/$CRYPT_NAME rootflags=subvol=$slot rw quiet
+rd.luks.name=$luks_uuid=$CRYPT_NAME root=/dev/mapper/$CRYPT_NAME rootflags=subvol=$slot rw quiet mitigations=off
 EOF
 
 	sed -i \

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+## E-book reader with EPUB, Kindle, FB2, comic-book, and PDF support
+set -Eeuo pipefail
+
+source "$SETUP_ROOT/lib/module.sh"
+source "$SETUP_ROOT/lib/flatpak.sh"
+
+pkg_install flathub/com.github.johnfactotum.Foliate
+flatpak_alias foliate com.github.johnfactotum.Foliate

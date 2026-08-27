@@ -10,7 +10,9 @@ packages=(
 pkg_install "${packages[@]}"
 
 install -d -m 0750 /etc/sudoers.d
-printf '%s ALL=(ALL:ALL) ALL\n' "$USERNAME" >"/etc/sudoers.d/10-$USERNAME"
+# The encrypted boot and lock screen remain the authentication boundaries;
+# interactive sudo is deliberately passwordless for this personal workstation.
+printf '%s ALL=(ALL:ALL) NOPASSWD: ALL\n' "$USERNAME" >"/etc/sudoers.d/10-$USERNAME"
 chmod 0440 "/etc/sudoers.d/10-$USERNAME"
 visudo --check --file "/etc/sudoers.d/10-$USERNAME"
 
