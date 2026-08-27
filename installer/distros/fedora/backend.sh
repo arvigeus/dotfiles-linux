@@ -74,7 +74,7 @@ distro_generate_uki() {
 	[[ -f $TARGET_ROOT$kernel_image ]] || kernel_image="/boot/vmlinuz-$kernel_version"
 	[[ -f $TARGET_ROOT$kernel_image ]] || die "Fedora kernel image not found for $kernel_version"
 
-	cmdline="rd.luks.name=$luks_uuid=$CRYPT_NAME root=/dev/mapper/$CRYPT_NAME rootfstype=btrfs rootflags=subvol=$slot rw selinux=1 enforcing=1"
+	cmdline="rd.luks.name=$luks_uuid=$CRYPT_NAME root=/dev/mapper/$CRYPT_NAME rootfstype=btrfs rootflags=subvol=$slot rw quiet selinux=1 enforcing=1"
 	printf '%s\n' "$cmdline" >"$TARGET_ROOT/etc/kernel/cmdline"
 	install -Dm755 \
 		"$PROJECT_ROOT/installer/distros/fedora/system-refresh-uki" \
