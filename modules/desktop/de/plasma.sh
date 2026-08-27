@@ -133,12 +133,16 @@ fi
 	exit 1
 }
 if ! grep -Fq 'pam_succeed_if.so user ingroup nopasswdlogin' /etc/pam.d/plasmalogin; then
-	awk 'NR == 1 {
-		print
-		print "auth       sufficient   pam_succeed_if.so user ingroup nopasswdlogin"
-		next
-	}
-	{ print }' /etc/pam.d/plasmalogin | file_write /etc/pam.d/plasmalogin
+	awk '
+		!added && $1 == "auth" {
+			print "auth       sufficient   pam_succeed_if.so user ingroup nopasswdlogin"
+			added = 1
+		}
+		{ print }
+		END {
+			if (!added)
+				print "auth       sufficient   pam_succeed_if.so user ingroup nopasswdlogin"
+		}' /etc/pam.d/plasmalogin | file_write /etc/pam.d/plasmalogin
 fi
 
 # KDE Connect ships a UFW application profile. Add it once on the booted
