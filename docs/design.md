@@ -203,6 +203,7 @@ Non-native managers install system-wide wherever the manager supports it:
 
 - Flatpak uses the system installation;
 - Cargo uses `/usr/local`;
+- npm packages use the distribution npm installation's global prefix;
 - AUR output is installed through Pacman, while its unprivileged build state
   lives under `/var/lib/system`, not persistent `/home`.
 
@@ -218,11 +219,31 @@ live at:
 packages/<distro>/<name>/...
 ```
 
-The implemented Arch route is `arch:pkgbuild/<name>`, handled by
-`pm/arch/pkgbuild.sh`, which expects `packages/arch/<name>/PKGBUILD`. The AUR
-plugin is independent: it installs `paru` explicitly from Chaotic-AUR. Fedora
-may later use the same directory shape for spec files or another native recipe
-format; no Fedora mechanism is invented until it is needed.
+Local recipes are a fallback, not a preferred source. Modules use an existing
+enabled repository or the AUR whenever it already carries the package, and use
+`arch:`/`fedora:` scopes when availability differs.
+
+The Arch route is `arch:pkgbuild/<name>`, handled by `pm/arch/pkgbuild.sh`,
+which expects `packages/arch/<name>/PKGBUILD`. The AUR plugin is independent:
+it installs `paru` explicitly from Chaotic-AUR.
+
+The Fedora route is `fedora:rpmspec/<name>`, handled by
+`pm/fedora/rpmspec.sh`. It expects both
+`packages/fedora/<name>/<name>.spec` and `sources.sha256`. The plugin resolves
+`BuildRequires`, downloads spec sources with `spectool`, verifies every source,
+builds as an unprivileged account, and installs the resulting RPM through DNF.
+Recipe names must match their installed native package names so installed-state
+checks remain ordinary RPM queries.
+
+`run_modules` does not build directly from the tracked recipe snapshots. It
+copies `packages/` into the candidate's temporary `/run`, invokes
+`packages/update.sh` for the selected distribution, and exports
+`PACKAGE_RECIPE_ROOT` to package plugins. Release-based recipes resolve the
+latest non-draft, non-prerelease GitHub release; commit-based recipes resolve
+the default branch head and read their version from upstream metadata. Sources
+are downloaded and hashed before the package builder is called. Resolution is
+fail-closed: an unavailable API, source, or checksum aborts the rebuild rather
+than silently using a stale snapshot.
 
 ## Files and ownership
 

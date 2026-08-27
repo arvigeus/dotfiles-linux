@@ -100,7 +100,10 @@ Package source plugins are demand-driven:
 pm/arch/pacman.sh       Arch native manager and its configuration
 pm/fedora/dnf.sh        Fedora native manager and its configuration
 pm/flathub.sh           shared system Flatpak source
+pm/npm.sh               shared system-wide npm source
 pm/arch/aur.sh          Arch-only AUR source
+pm/fedora/claude.sh     Fedora-only Anthropic RPM source
+pm/fedora/openai.sh     Fedora-only official ChatGPT bootstrap source
 pm/fedora/terra.sh      Fedora-only Terra source
 ```
 
@@ -108,8 +111,13 @@ If no selected declaration references Flathub, Flatpak and Flathub are not
 installed or enabled. The same rule applies to every plugin. See the design
 contract for the exact grammar and plugin API.
 
-Local package recipes live in `packages/<distro>/<name>/`. Currently
-`arch:pkgbuild/<name>` builds `packages/arch/<name>/PKGBUILD`.
+Local package recipes are used only when an enabled repository or the AUR does
+not already carry the package. They live in `packages/<distro>/<name>/`:
+`arch:pkgbuild/<name>` builds `packages/arch/<name>/PKGBUILD`, while
+`fedora:rpmspec/<name>` builds `packages/fedora/<name>/<name>.spec` after
+verifying the downloaded sources against `sources.sha256`. Bootstrap and
+rebuild resolve these local recipes to the latest stable release (or latest
+default-branch commit) in an ephemeral copy before modules run.
 
 ## File declarations
 

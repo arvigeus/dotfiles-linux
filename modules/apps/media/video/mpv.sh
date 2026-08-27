@@ -14,7 +14,11 @@ SHADERS_DIR="/usr/share/mpv-shim-default-shaders/shaders"
 PACK_JSON="/usr/share/mpv-shim-default-shaders/pack-next.json"
 MPV_CONF_DIR="/etc/mpv"
 
-packages=(mpv jq curl tar gzip)
+packages=(
+	mpv jq curl tar gzip
+	arch:chaotic-aur/mpv-uosc
+	fedora:rpmspec/mpv-uosc
+)
 
 # --- Static config files ---
 
@@ -140,39 +144,11 @@ install_thumbfast() (
 	install -Dm644 "$tmpdir/thumbfast.conf" "${MPV_CONF_DIR}/script-opts/thumbfast.conf"
 )
 
-# https://github.com/stax76/awesome-mpv?tab=readme-ov-file#on-screen-controller
-# https://gitlab.com/chaotic-aur/pkgbuilds/-/blob/main/mpv-uosc/PKGBUILD
-install_osc() (
-	local tag tmpdir
-	tag=$(github_latest_tag "tomasklaen/uosc")
-	tmpdir=$(mktemp -d)
-	trap 'rm -rf -- "$tmpdir"' EXIT
-	github_download \
-		"https://github.com/tomasklaen/uosc/archive/refs/tags/${tag}.tar.gz" \
-		"$tmpdir/uosc.tar.gz"
-	tar -xzf "$tmpdir/uosc.tar.gz" --strip-components=1 -C "$tmpdir"
-	rm -f -- "$tmpdir/uosc.tar.gz"
-	(
-		cd "$tmpdir"
-		CGO_ENABLED=0 GOFLAGS="-modcacherw" go build -o ./ziggy-linux ./src/ziggy/ziggy.go
-	)
-	file_install_tree "$tmpdir/src/uosc" /usr/share/mpv/scripts/uosc
-	install -Dm755 "$tmpdir/ziggy-linux" /usr/share/mpv/scripts/uosc/bin/ziggy-linux
-	install -Dm644 "$tmpdir/src/uosc.conf" "${MPV_CONF_DIR}/script-opts/uosc.conf"
-	for font in uosc_icons.otf uosc_textures.ttf; do
-		install -Dm644 "$tmpdir/src/fonts/${font}" "/usr/share/mpv/fonts/${font}"
-	done
-)
-
 # --- Install packages ---
 
 pkg_install "${packages[@]}"
 install_shaders
 install_thumbfast
-case "$DISTRO" in
-arch) pkg_from_source install_osc go ;;
-fedora) pkg_from_source install_osc golang ;;
-esac
 
 # --- Additional plugins ---
 

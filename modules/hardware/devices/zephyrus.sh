@@ -12,20 +12,17 @@ dmi_matches zephyrus || dmi_matches 'rog' || exit 0
 file_write -m 0755 /usr/local/bin/system-g14-observe \
 	<"$MODULE_DIR/system-g14-observe"
 
-case "$DISTRO" in
-arch)
-	pkg_install \
-		arch:ogc/asusctl \
-		arch:ogc/rog-control-center \
-		arch:switcheroo-control
-	;;
-fedora)
-	pkg_install \
-		fedora:terra/asusctl \
-		fedora:terra/asusctl-rog-gui \
-		fedora:switcheroo-control
-	;;
-esac
+packages=(
+    arch:ogc/asusctl
+    fedora:terra/asusctl
+    
+    arch:ogc/rog-control-center
+    fedora:terra/asusctl-rog-gui
+    
+    arch:switcheroo-control
+    fedora:switcheroo-control
+)
+pkg_install "${packages[@]}"
 
 # asusd is the sole platform-profile and CPU-EPP owner. ASUS upstream warns
 # that PPD or tuned running at the same time races on those same interfaces;

@@ -20,6 +20,20 @@ run_modules() {
 	tracked_bind_mount "$PROJECT_ROOT" "$setup_mount"
 	mount -o remount,bind,ro "$setup_mount"
 
+	# Resolve local recipes in an ephemeral copy. The checkout remains unchanged,
+	# while every bootstrap/rebuild builds the latest stable release or branch
+	# head with checksums calculated before package tooling runs.
+	local package_recipe_root="/run/$PROJECT_ID-package-recipes"
+	local target_recipe_root="$TARGET_ROOT$package_recipe_root"
+	log "Resolving latest local package recipes"
+	rm -rf -- "$target_recipe_root"
+	mkdir -p "$target_recipe_root"
+	cp -a -- "$PROJECT_ROOT/packages/." "$target_recipe_root/"
+	target_chroot /usr/bin/env \
+		GITHUB_TOKEN="${GITHUB_TOKEN:-}" \
+		bash "/run/$PROJECT_ID/packages/update.sh" \
+		"$package_recipe_root" "$DISTRO"
+
 	local modules=()
 	local module relative module_dir
 	shopt -s globstar nullglob
@@ -45,6 +59,7 @@ run_modules() {
 			USER_GID="$USER_GID" \
 			DISTRO="$DISTRO" \
 			PACKAGE_MANAGER="$PACKAGE_MANAGER" \
+			PACKAGE_RECIPE_ROOT="$package_recipe_root" \
 			PROJECT_ID="$PROJECT_ID" \
 			PRESERVE_REQUESTS_FILE="$preserve_requests" \
 			HOME_DELETE_MODE="$HOME_DELETE_MODE" \

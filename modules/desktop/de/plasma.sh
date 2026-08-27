@@ -47,44 +47,15 @@ packages=(
 
 	# Wallpaper utility retained from the previous setup.
 	flathub/de.swsnr.pictureoftheday
+
+	# Overview has no distro package; Wallhaven is already packaged on Arch.
+	arch:pkgbuild/plasma6-applets-overview-widget
+	fedora:rpmspec/plasma6-applets-overview-widget
+	arch:aur/plasma6-applets-wallhaven-reborn-git
+	fedora:rpmspec/plasma6-applets-wallhaven-reborn
 )
 
 pkg_install "${packages[@]}"
-
-install_plasma_addons() (
-	set -Eeuo pipefail
-	local tmpdir overview_archive wallhaven_archive
-	tmpdir=$(mktemp -d)
-	trap 'rm -rf -- "$tmpdir"' EXIT
-	overview_archive="$tmpdir/overview.tar.gz"
-	wallhaven_archive="$tmpdir/wallhaven.tar.gz"
-
-	curl --fail --silent --show-error --location \
-		--output "$overview_archive" \
-		https://github.com/HimDek/Overview-Widget-for-Plasma/archive/030224751ad7114e695297c9f0822b668baee5f9.tar.gz
-	printf '%s  %s\n' \
-		446f7aed6766ef84f0ed3fa188b97c771990a366341103f3892ddc4a9eef3261 \
-		"$overview_archive" | sha256sum --check --status
-	mkdir -p "$tmpdir/overview"
-	tar -xzf "$overview_archive" --strip-components=1 -C "$tmpdir/overview"
-	file_install_tree \
-		"$tmpdir/overview" \
-		/usr/share/plasma/plasmoids/com.himdek.kde.plasma.overview
-
-	curl --fail --silent --show-error --location \
-		--output "$wallhaven_archive" \
-		https://github.com/Blacksuan19/plasma-wallpaper-wallhaven-reborn/archive/174c29c27ba7eb62c3da75238f6f8f91e7415125.tar.gz
-	printf '%s  %s\n' \
-		0f35932943d29ae1c9776ce347950c707d6d24bdbb2ff3b1a2a3408d5f2d8f6d \
-		"$wallhaven_archive" | sha256sum --check --status
-	mkdir -p "$tmpdir/wallhaven"
-	tar -xzf "$wallhaven_archive" --strip-components=1 -C "$tmpdir/wallhaven"
-	file_install_tree \
-		"$tmpdir/wallhaven/package" \
-		/usr/share/plasma/wallpapers/com.plasma.wallpaper.wallhaven
-)
-
-pkg_from_source install_plasma_addons curl tar gzip
 
 kde_default() {
 	local file=${1:?file required}

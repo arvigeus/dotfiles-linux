@@ -40,7 +40,8 @@ _pkgbuild_install_recipe() (
 		printf 'Invalid local package name: %s\n' "$package" >&2
 		return 1
 	}
-	local recipe="$SETUP_ROOT/packages/arch/$package"
+	local recipes_root=${PACKAGE_RECIPE_ROOT:-$SETUP_ROOT/packages}
+	local recipe="$recipes_root/arch/$package"
 	[[ -f $recipe/PKGBUILD ]] || {
 		printf 'No tracked PKGBUILD for %s\n' "$package" >&2
 		return 1

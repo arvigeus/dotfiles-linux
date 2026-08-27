@@ -57,38 +57,6 @@ home_strategy() {
 		>>"/etc/$PROJECT_ID/home-strategies.tsv"
 }
 
-# Run a build function with temporary packages, then remove only requested
-# build dependencies that were not present beforehand.
-pkg_from_source() {
-	local build_function=${1:?pkg_from_source requires a build function}
-	shift
-
-	local package
-	local added_packages=()
-	for package in "$@"; do
-		pkg_is_installed "$package" || added_packages+=("$package")
-	done
-
-	((${#added_packages[@]} == 0)) || pkg_install "${added_packages[@]}"
-
-	local build_status=0 cleanup_status=0 restore_errexit=false
-	[[ $- == *e* ]] && restore_errexit=true
-	set +e
-	(
-		set -e
-		"$build_function"
-	)
-	build_status=$?
-	[[ $restore_errexit == false ]] || set -e
-
-	if ((${#added_packages[@]} > 0)); then
-		pkg_remove "${added_packages[@]}" || cleanup_status=$?
-	fi
-
-	((build_status == 0)) || return "$build_status"
-	return "$cleanup_status"
-}
-
 # Parse install-style metadata flags for file_write and file_append.
 _file_parse_options() {
 	FILE_MODE=
@@ -99,17 +67,26 @@ _file_parse_options() {
 	while (($# > 0)); do
 		case $1 in
 		-m | --mode)
-			(($# >= 2)) || { printf '%s requires a value\n' "$1" >&2; return 1; }
+			(($# >= 2)) || {
+				printf '%s requires a value\n' "$1" >&2
+				return 1
+			}
 			FILE_MODE=$2
 			shift 2
 			;;
 		-o | --owner)
-			(($# >= 2)) || { printf '%s requires a value\n' "$1" >&2; return 1; }
+			(($# >= 2)) || {
+				printf '%s requires a value\n' "$1" >&2
+				return 1
+			}
 			FILE_OWNER=$2
 			shift 2
 			;;
 		-g | --group)
-			(($# >= 2)) || { printf '%s requires a value\n' "$1" >&2; return 1; }
+			(($# >= 2)) || {
+				printf '%s requires a value\n' "$1" >&2
+				return 1
+			}
 			FILE_GROUP=$2
 			shift 2
 			;;

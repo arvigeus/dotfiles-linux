@@ -10,34 +10,11 @@ source "$SETUP_ROOT/lib/hardware.sh"
 # does not opt the machine into this device-specific configuration.
 usb_vendor_present 046d || exit 0
 
-case "$DISTRO" in
-	fedora)
-		pkg_install logiops
-		;;
-	arch)
-		install_logiops() (
-			set -Eeuo pipefail
-			local tag tmpdir archive stage
-			tag=$(github_latest_tag PixlOne/logiops)
-			tmpdir=$(mktemp -d)
-			trap 'rm -rf -- "$tmpdir"' EXIT
-			archive="$tmpdir/logiops.tar.gz"
-			stage="$tmpdir/stage"
-			github_download \
-				"https://github.com/PixlOne/logiops/archive/refs/tags/${tag}.tar.gz" \
-				"$archive"
-			mkdir -p "$tmpdir/source" "$tmpdir/build" "$stage"
-			tar -xzf "$archive" --strip-components=1 -C "$tmpdir/source"
-			cmake -S "$tmpdir/source" -B "$tmpdir/build" \
-				-DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
-			cmake --build "$tmpdir/build" --parallel 1
-			DESTDIR="$stage" cmake --install "$tmpdir/build"
-			cp -a --no-preserve=ownership -- "$stage/." /
-		)
-		pkg_from_source install_logiops \
-			cmake gcc make pkgconf libconfig libevdev systemd
-		;;
-esac
+packages=(
+    arch:chaotic-aur/logiops
+    fedora:logiops
+)
+pkg_install "${packages[@]}"
 
 file_write /etc/logid.cfg <<'EOF'
 devices: (

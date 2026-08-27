@@ -8,14 +8,13 @@ source "$SETUP_ROOT/lib/json.sh"
 source "$SETUP_ROOT/lib/browsers.sh"
 
 packages=(
-	firefox
+	firefox jq util-linux unzip curl
 	arch:aur/crudini
 	fedora:crudini
 )
 
-BROWSERS_CONFIG=$(json_strip_comments "$MODULE_DIR/common.jsonc")
-
 pkg_install "${packages[@]}"
+BROWSERS_CONFIG=$(json_strip_comments "$MODULE_DIR/common.jsonc")
 
 # https://github.com/arkenfox/user.js/blob/master/user.js
 # shellcheck disable=SC2034 # read via nameref in gecko_generate_userjs
@@ -37,7 +36,7 @@ declare -A USER_PREFS=(
 	["dom.security.https_only_mode"]=true
 	["browser.contentblocking.category"]="strict"
 	["security.ssl.require_safe_negotiation"]=true
-	["security.cert_pinning.enforcement_level"]=2 # strict
+	["security.cert_pinning.enforcement_level"]=2    # strict
 	["browser.xul.error_pages.expert_bad_cert"]=true # display advanced information on Insecure Connection warning pages
 
 	# Containers
@@ -108,4 +107,4 @@ setup_firefox() {
 gecko_profiles_ini | file_write "$FF_DIR/profiles.ini"
 gecko_generate_userjs USER_PREFS | file_write "$PROFILE/user.js"
 
-pkg_from_source setup_firefox jq util-linux unzip curl
+setup_firefox

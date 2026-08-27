@@ -9,6 +9,7 @@ source "$SETUP_ROOT/lib/browsers.sh"
 source "$SETUP_ROOT/lib/flatpak.sh"
 
 packages=(
+	jq util-linux unzip curl
 	flathub/app.zen_browser.zen
 	arch:aur/crudini
 	fedora:crudini
@@ -27,4 +28,4 @@ setup_zen() {
 }
 
 gecko_profiles_ini | file_write "$ZEN_HOME/profiles.ini"
-pkg_from_source setup_zen jq util-linux unzip curl
+setup_zen

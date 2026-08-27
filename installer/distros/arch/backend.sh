@@ -32,7 +32,7 @@ distro_detect_microcode_package() {
 distro_install_base_system() {
 	local packages=(
 		base "$KERNEL_PACKAGE" linux-firmware mkinitcpio btrfs-progs
-		cryptsetup efibootmgr jq go-yq
+		cryptsetup curl efibootmgr jq go-yq
 	)
 	local microcode_package
 	microcode_package=$(distro_detect_microcode_package)

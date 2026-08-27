@@ -1,0 +1,23 @@
+# Maintainer: system project contributors
+
+pkgname=plasma6-applets-overview-widget
+pkgver=1.5
+pkgrel=1
+pkgdesc='Overview toggle widget for Plasma 6'
+arch=('any')
+url='https://github.com/HimDek/Overview-Widget-for-Plasma'
+license=('GPL-3.0-or-later')
+depends=('plasma-workspace')
+_commit=030224751ad7114e695297c9f0822b668baee5f9
+source=("$pkgname-$_commit.tar.gz::$url/archive/$_commit.tar.gz")
+sha256sums=('446f7aed6766ef84f0ed3fa188b97c771990a366341103f3892ddc4a9eef3261')
+
+package() {
+	local source_dir="$srcdir/Overview-Widget-for-Plasma-$_commit"
+	local destination="$pkgdir/usr/share/plasma/plasmoids/com.himdek.kde.plasma.overview"
+
+	install -d "$destination"
+	cp -a --no-preserve=ownership "$source_dir/." "$destination/"
+	install -Dm644 "$source_dir/LICENSE.md" \
+		"$pkgdir/usr/share/licenses/$pkgname/LICENSE.md"
+}

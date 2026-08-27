@@ -10,18 +10,17 @@ source "$SETUP_ROOT/lib/browsers.sh"
 source "$SETUP_ROOT/lib/flatpak.sh"
 
 packages=(
-	chromium
+	chromium jq
 	flathub/com.google.Chrome
 )
 
-BROWSERS_CONFIG=$(json_strip_comments "$MODULE_DIR/common.jsonc")
-
 pkg_install "${packages[@]}"
 flatpak_alias chrome com.google.Chrome
+BROWSERS_CONFIG=$(json_strip_comments "$MODULE_DIR/common.jsonc")
 
 setup_chromium() {
 	chromium_install_extensions "$BROWSERS_CONFIG"
 	# Keep Chrome clean
 }
 
-pkg_from_source setup_chromium jq
+setup_chromium
