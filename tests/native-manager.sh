@@ -13,6 +13,9 @@ cat >"$TEST_ROOT/etc/pacman.conf" <<'EOF'
 
 [core]
 Include = /etc/pacman.d/mirrorlist
+
+[extra]
+Include = /etc/pacman.d/mirrorlist
 EOF
 
 source "$PROJECT_ROOT/pm/arch/pacman.sh"
@@ -22,24 +25,45 @@ pkg_native_configure "$TEST_ROOT"
 [[ $(grep -c '^VerbosePkgLists$' "$TEST_ROOT/etc/pacman.conf") == 1 ]]
 
 PACMAN_CONFIG="$TEST_ROOT/etc/pacman.conf"
+pacman_repo_write core-x86-64-v3 core <<'EOF'
+Usage = Sync Install Upgrade
+Include = /etc/pacman.d/alhp-mirrorlist
+EOF
+pacman_repo_write extra-x86-64-v3 extra <<'EOF'
+Usage = Sync Install Upgrade
+Include = /etc/pacman.d/alhp-mirrorlist
+EOF
+pacman_repo_write multilib-x86-64-v3 multilib <<'EOF'
+Usage = Sync Install Upgrade
+Include = /etc/pacman.d/alhp-mirrorlist
+EOF
+pacman_repo_write multilib <<'EOF'
+Include = /etc/pacman.d/mirrorlist
+EOF
 pacman_repo_write chaotic-aur <<'EOF'
 Include = /etc/pacman.d/chaotic-mirrorlist
 EOF
 pacman_repo_write ogc chaotic-aur <<'EOF'
 Server = https://pacman.opengamingcollective.org
 EOF
-if pacman_repo_write ogc chaotic-aur <<'EOF'
+if pacman_repo_write ogc chaotic-aur <<'EOF'; then
 Server = https://pacman.opengamingcollective.org
 EOF
-then
 	printf 'unchanged Pacman repository was rewritten\n' >&2
 	exit 1
 fi
 [[ $(grep -c '^\[ogc\]$' "$PACMAN_CONFIG") == 1 ]]
 [[ $(grep -c '^\[chaotic-aur\]$' "$PACMAN_CONFIG") == 1 ]]
-ogc_line=$(grep -n '^\[ogc\]$' "$PACMAN_CONFIG")
-chaotic_line=$(grep -n '^\[chaotic-aur\]$' "$PACMAN_CONFIG")
-(( ${ogc_line%%:*} < ${chaotic_line%%:*} ))
+for repositories in \
+	'core-x86-64-v3 core' \
+	'extra-x86-64-v3 extra' \
+	'multilib-x86-64-v3 multilib' \
+	'ogc chaotic-aur'; do
+	read -r first second <<<"$repositories"
+	first_line=$(grep -n "^\[$first\]$" "$PACMAN_CONFIG")
+	second_line=$(grep -n "^\[$second\]$" "$PACMAN_CONFIG")
+	((${first_line%%:*} < ${second_line%%:*}))
+done
 unset PACMAN_CONFIG
 
 cat >"$TEST_ROOT/etc/dnf/dnf.conf" <<'EOF'

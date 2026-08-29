@@ -30,6 +30,27 @@ reintroduction_policy:
       changed_evidence_required: Repeatable per-game frame-time data shows a benefit with all overlapping power/profile actions disabled.
 
 sources:
+  alhp:
+    repository: https://somegit.dev/ALHP/ALHP.GO
+    branch: master
+    commit: e88fb00a687624f1a0de2f70aedb9e9aa4deb40f
+    commit_date: 2026-08-19T00:08:59+02:00
+    reviewed_at: 2026-08-25
+    areas:
+      - README.md
+      - alhp-keyring AUR package
+      - alhp-mirrorlist AUR package
+    adopted:
+      - CPU-gated x86-64-v3 core, extra, and multilib overlays on Arch
+      - repository ordering directly before each official Arch fallback
+      - ALHP keyring and mirrorlist AUR packages through their signed Chaotic-AUR builds
+    rejected:
+      - x86-64-v4 on the Ryzen 9 6900HS
+      - treating compiler flags as proof of a gaming, thermal, or battery benefit
+    risks:
+      - packages can lag official Arch while ALHP rebuilds large transitions
+      - ALHP kernel pkgrel breaks directly linked module packages; DKMS variants are unaffected
+
   bazzite:
     repository: https://github.com/ublue-os/bazzite
     branch: main

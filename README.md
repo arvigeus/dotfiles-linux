@@ -77,7 +77,9 @@ available while testing.
 
 ## Modules
 
-Every `modules/**/*.sh` file executes in lexical order inside the candidate.
+Init modules under the flat `modules/00_init/` directory execute first in
+numeric filename order. After local recipes are resolved, all remaining
+`modules/**/*.sh` files execute in C-locale path order inside the candidate.
 Modules are isolated trusted-root Bash scripts and must guard themselves when
 they only apply to a distro or piece of hardware.
 
@@ -99,6 +101,7 @@ Package source plugins are demand-driven:
 ```text
 pm/arch/pacman.sh       Arch native manager and its configuration
 pm/fedora/dnf.sh        Fedora native manager and its configuration
+pm/arch/alhp.sh         Arch x86-64-v3 optimized overlay (CPU-gated)
 pm/flathub.sh           shared system Flatpak source
 pm/npm.sh               shared system-wide npm source
 pm/arch/aur.sh          Arch-only AUR source
@@ -108,8 +111,11 @@ pm/fedora/terra.sh      Fedora-only Terra source
 ```
 
 If no selected declaration references Flathub, Flatpak and Flathub are not
-installed or enabled. The same rule applies to every plugin. See the design
-contract for the exact grammar and plugin API.
+installed or enabled. The same rule applies to every plugin. `modules/00_init/`
+is the explicit early phase for prerequisites and global policy such as ALHP,
+before recipe resolution and bulk package installation. Its flat files use
+names such as `00_something.sh` and `01_other.sh`. See the design contract for
+the exact grammar and plugin API.
 
 Local package recipes are used only when an enabled repository or the AUR does
 not already carry the package. They live in `packages/<distro>/<name>/`:
@@ -117,7 +123,8 @@ not already carry the package. They live in `packages/<distro>/<name>/`:
 `fedora:rpmspec/<name>` builds `packages/fedora/<name>/<name>.spec` after
 verifying the downloaded sources against `sources.sha256`. Bootstrap and
 rebuild resolve these local recipes to the latest stable release (or latest
-default-branch commit) in an ephemeral copy before modules run.
+default-branch commit) in an ephemeral copy after init and before ordinary
+modules run.
 
 ## File declarations
 

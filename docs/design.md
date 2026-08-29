@@ -105,20 +105,27 @@ currently provided.
 A failure before activation leaves the running root and firmware order intact.
 Home is mounted only after provisioning and UKI generation succeed.
 
-Arch and Fedora bootstrap and retain their official stock kernels. Arch's UKI
-preset and Pacman hook track the configured bootstrap package (normally
-`linux`); Fedora selects the newest installed stock kernel and its
-`kernel-install` hook refreshes only the running slot's UKI. Third-party gaming
-kernels are not part of the platform contract: current stock kernels carry the
-required AMD, Gamescope, and ASUS `asus-armoury` support without adding another
-repository and kernel supply chain.
+Arch and Fedora bootstrap with their official stock kernels. On a CPU that
+passes the x86-64-v3 runtime gate, Arch's init phase then enables ALHP and
+upgrades available packages before recipe resolution and bulk module
+installation; Fedora
+retains its official stock kernel. Arch's UKI preset and Pacman hook track the
+configured bootstrap package (normally `linux`), including its ALHP rebuild when
+available; Fedora selects the newest installed stock kernel and its
+`kernel-install` hook refreshes only the running slot's UKI. Patched third-party
+gaming kernels remain outside the platform contract: upstream-derived kernels
+carry the required AMD, Gamescope, and ASUS `asus-armoury` support.
 
 ## Modules
 
-Every `modules/**/*.sh` file runs, recursively, in lexical order. A module that
-does not apply must guard itself and exit successfully—for example by checking
-`DISTRO`, CPU/PCI vendor, DMI identity, or another hardware fact. Examples that
-must not execute do not belong below `modules/`.
+The flat files directly under `modules/00_init/` run first in explicit C-locale
+path order, so numeric names such as `00_something.sh` and `01_other.sh` define
+a simple local sequence. Init modules establish prerequisites or global policy
+that must exist before recipe resolution and ordinary modules. Every other
+`modules/**/*.sh` file then runs recursively in C-locale path order. A module
+that does not apply must guard itself and exit successfully—for example by
+checking `DISTRO`, CPU/PCI vendor, DMI identity, or another hardware fact.
+Examples that must not execute do not belong below `modules/`.
 
 Modules run as trusted root code in isolated Bash processes inside the
 candidate. They receive `HOME=/etc/skel`, the XDG skeleton paths, `SETUP_ROOT`,
@@ -126,8 +133,9 @@ candidate. They receive `HOME=/etc/skel`, the XDG skeleton paths, `SETUP_ROOT`,
 state. They must source `"$SETUP_ROOT/lib/module.sh"` before using the module
 API and must not depend on functions or variables created by another module.
 
-Lexical order is deterministic execution order, not a dependency mechanism.
-Each module declares its own packages and prerequisites.
+Outside the reserved init phase, path order is deterministic execution order,
+not a dependency mechanism. Each module declares its own packages and
+prerequisites.
 
 ## Package declarations
 

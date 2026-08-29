@@ -23,6 +23,14 @@ first_claude_command=$(awk '!/^#!/ && !/^[[:space:]]*#/ && NF { print; exit }' \
 }
 
 while IFS= read -r file; do
+	relative=${file#modules/00_init/}
+	if [[ $relative == */* || ! $relative =~ ^[0-9]{2}_[a-zA-Z0-9._-]+\.sh$ ]]; then
+		printf 'Init modules must be flat and numerically named: %s\n' "$file" >&2
+		exit 1
+	fi
+done < <(cd "$PROJECT_ROOT" && rg --files modules/00_init -g '*.sh' | sort)
+
+while IFS= read -r file; do
 	if ! rg -q 'source .*lib/module\.sh' "$PROJECT_ROOT/$file"; then
 		printf 'Module does not load lib/module.sh: %s\n' "$file" >&2
 		exit 1

@@ -79,7 +79,8 @@ Policy and installed files are shared. Only package provenance differs:
 | Steam | `multilib/steam` | RPM Fusion `steam` |
 | Controller permissions | `multilib/steam-devices` | Fedora `steam-devices` |
 | Gamescope/MangoHud/zram | official packages plus `lib32-mangohud` | official packages plus `mangohud.i686` |
-| Mesa/RADV 32-bit | multilib Mesa/Vulkan packages | `.i686` Mesa/Vulkan packages |
+| Mesa/RADV 32-bit | ALHP v3 overlay with official multilib fallback | `.i686` Mesa/Vulkan packages |
+| General package provenance | CPU-gated ALHP v3 overlay, then official Arch fallback | official Fedora repositories |
 | ASUS CLI/GUI | OGC `asusctl`, `rog-control-center` | Terra `asusctl`, `asusctl-rog-gui` |
 | Hybrid GPU service | official `switcheroo-control` | official `switcheroo-control` |
 
@@ -196,14 +197,25 @@ SteamOS but does not steal laptop lid or power-button policy from the desktop.
 
 ### Kernel and graphics
 
-Arch and Fedora use their stock, current kernels. The former OGC kernel path was
-removed: its only concrete need was access to gaming and ASUS work that is now
-upstream, while replacing the bootstrap kernel complicated UKI selection and
-Fedora supply-chain verification. Current stock kernels are also the expected
-delivery path for `asus-armoury` (merged for Linux 6.19).
+Fedora uses its stock, current kernel. Arch enables ALHP's `x86-64-v3`
+repositories only when glibc confirms CPU support, so the final Arch kernel and
+other available packages may be ALHP rebuilds of Arch package sources. The
+Ryzen 9 6900HS is expected to pass that gate; an unsupported VM or machine keeps
+the official Arch repositories. ALHP remains a third-party binary repository,
+may lag Arch during large rebuilds, and is not treated as measured evidence of
+a gaming, thermal, or battery improvement.
 
-Mesa/RADV, firmware, and Vulkan loaders come from the selected distribution.
-No patched Mesa or latency layer is mixed into the stack. LACT was removed:
+The former OGC kernel path was removed: its only concrete need was access to
+gaming and ASUS work that is now upstream, while replacing the bootstrap
+kernel complicated UKI selection and Fedora supply-chain verification. ALHP
+does not add that OGC patch set, but its increased package release can still
+break directly linked out-of-tree kernel-module packages; use DKMS variants if
+such a module is later introduced. Current upstream-derived kernels remain the
+expected delivery path for `asus-armoury` (merged for Linux 6.19).
+
+Mesa/RADV, firmware, and Vulkan loaders come from the selected distribution or,
+on Arch, the matching ALHP v3 overlay with official repository fallback. No
+patched Mesa or latency layer is mixed into the stack. LACT was removed:
 continuous GPU clock/voltage management is not the chosen control plane for a
 firmware-managed laptop dGPU.
 
@@ -462,7 +474,8 @@ and remain unchanged.
 | HDR output | WATCH | Implemented as opt-in; requires actual display-path validation |
 | MangoHud | ADOPT | Available on demand, never globally injected |
 | Distro Mesa/RADV and 32-bit userspace | ALREADY COVERED | Existing AMD module was basically correct |
-| Patched Mesa/kernel/audio stack | REJECT | No unresolved machine-specific requirement |
+| ALHP x86-64-v3 Arch overlay | ADOPT | CPU-gated rebuilds of Arch packages; no performance or hardware-validation claim |
+| Patched Mesa/kernel/audio stack | REJECT | No unresolved machine-specific requirement; ALHP rebuild flags are not an out-of-tree patch set |
 | vkBasalt/low-latency Vulkan layer | REJECT | Optional effects/experimental behavior without a stated need |
 | `asusd` + `asus-armoury` + `asus-shutdown` | ADOPT | Upstream ASUS control and safe firmware-mode application |
 | PPD/tuned/TLP/auto-cpufreq alongside `asusd` | REJECT | Competing profile and EPP owners |
@@ -584,7 +597,7 @@ These decisions should be revisited only when the stated premise changes.
 | supergfxctl | ASUS upstream now calls it deprecated in favor of Cardwire; retaining the old daemon would add a third GPU-switching authority | only for a legacy capability unavailable through ASUS firmware attributes or a stable Cardwire |
 | GameMode | Platform profile/governor actions conflict with `asusd`; benefit unmeasured | a benchmark shows benefit with power actions disabled |
 | LACT/RyzenAdj | Extra privileged writers to laptop GPU/APU power state | ASUS firmware path proves insufficient and a safe tested profile exists |
-| OGC kernel and patched Mesa | No required patch remains; increases packaging/UKI risk | a documented GA402 regression is fixed only there |
+| OGC kernel and patched Mesa | No required patch remains; increases packaging/UKI risk; the ALHP overlay does not reintroduce this patch set | a documented GA402 regression is fixed only there |
 | CachyOS kernel, ananicy, scx | Integrated distro tuning without local A/B evidence | repeatable frame-time/power benchmarks justify it |
 | vkBasalt and Vulkan low-latency layer | Effects/experimental layer installed for no stated game | a specific title/use case needs it |
 | forced `-steamdeck` | Advertises handheld/SteamOS capabilities the G14 does not have | Valve provides a documented generic Steam Machine mode needing it |
