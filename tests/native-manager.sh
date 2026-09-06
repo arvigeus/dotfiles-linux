@@ -18,7 +18,7 @@ Include = /etc/pacman.d/mirrorlist
 Include = /etc/pacman.d/mirrorlist
 EOF
 
-source "$PROJECT_ROOT/pm/arch/pacman.sh"
+source "$PROJECT_ROOT/sources/arch/pacman.sh"
 pkg_native_configure "$TEST_ROOT"
 pkg_native_configure "$TEST_ROOT"
 [[ $(grep -c '^ParallelDownloads = 10$' "$TEST_ROOT/etc/pacman.conf") == 1 ]]
@@ -66,12 +66,20 @@ for repositories in \
 done
 unset PACMAN_CONFIG
 
+EXTRA_PACKAGES=()
+pkg_native_install() {
+	EXTRA_PACKAGES=("$@")
+}
+source "$PROJECT_ROOT/sources/arch/extra.sh"
+source_install nodejs npm
+[[ ${EXTRA_PACKAGES[*]} == 'extra/nodejs extra/npm' ]]
+
 cat >"$TEST_ROOT/etc/dnf/dnf.conf" <<'EOF'
 [main]
 gpgcheck=True
 EOF
 
-source "$PROJECT_ROOT/pm/fedora/dnf.sh"
+source "$PROJECT_ROOT/sources/fedora/dnf.sh"
 pkg_native_configure "$TEST_ROOT"
 pkg_native_configure "$TEST_ROOT"
 for option in \

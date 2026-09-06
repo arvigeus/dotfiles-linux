@@ -8,4 +8,5 @@ packages=(
 	flathub/com.github.Matoking.protontricks
 	flathub/com.vysp3r.ProtonPlus
 )
-pkg_install "${packages[@]}"
+
+module_entrypoint "$@"

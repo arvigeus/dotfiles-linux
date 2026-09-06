@@ -8,4 +8,4 @@ source "$SETUP_ROOT/lib/module.sh"
 packages=(
 	lemonade-server
 )
-pkg_install "${packages[@]}"
+module_entrypoint "$@"

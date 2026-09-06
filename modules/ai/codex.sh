@@ -15,4 +15,4 @@ packages=(
 	fedora:openai/chatgpt
 	fedora:npm/@openai/codex
 )
-pkg_install "${packages[@]}"
+module_entrypoint "$@"

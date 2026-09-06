@@ -9,4 +9,4 @@ packages=(
 	fastfetch
 )
 
-pkg_install "${packages[@]}"
+module_entrypoint "$@"

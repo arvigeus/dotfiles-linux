@@ -6,7 +6,9 @@ set -Eeuo pipefail
 source "$SETUP_ROOT/lib/module.sh"
 source "$SETUP_ROOT/lib/hardware.sh"
 
-pci_vendor_present 0x1002 || exit 0
+module_check() {
+	pci_vendor_present 0x1002
+}
 
 packages=(
 	radeontop
@@ -28,7 +30,8 @@ packages=(
 	fedora:mesa-vulkan-drivers.i686
 	fedora:vulkan-loader.i686
 )
-pkg_install "${packages[@]}"
+
+module_entrypoint "$@"
 
 # ROCm remains opt-in: Vulkan covers the original local-inference use case and
 # ROCm support depends on the exact GPU generation.

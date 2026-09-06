@@ -18,7 +18,7 @@ arch | fedora) ;;
 	;;
 esac
 
-for command in awk chmod cp curl jq mktemp mv rm sha256sum touch; do
+for command in awk chmod cp curl grep jq mktemp mv rm sed sha256sum touch; do
 	command -v "$command" >/dev/null 2>&1 || {
 		printf 'Recipe updater requires %s\n' "$command" >&2
 		exit 1
@@ -29,7 +29,7 @@ workdir=$(mktemp -d)
 trap 'rm -rf -- "$workdir"' EXIT
 curl_options=(
 	--fail --silent --show-error --location
-	--connect-timeout 20 --retry 3 --retry-all-errors
+	--connect-timeout 20 --max-time 300 --retry 3 --retry-all-errors
 )
 download_index=0
 rewrite_index=0
@@ -103,8 +103,30 @@ head_resolve() {
 	validate_version "$HEAD_VERSION"
 }
 
+head_commit_resolve() {
+	local repository=${1:?GitHub repository required}
+	local repository_json branch commit_json timestamp
+	repository_json=$(github_api "/repos/$repository")
+	branch=$(jq -er '.default_branch' <<<"$repository_json")
+	[[ $branch =~ ^[0-9A-Za-z._/-]+$ ]] || {
+		printf 'Unsafe default branch for %s: %s\n' "$repository" "$branch" >&2
+		exit 1
+	}
+	commit_json=$(github_api "/repos/$repository/commits/$branch")
+	HEAD_COMMIT=$(jq -er '.sha' <<<"$commit_json")
+	validate_commit "$HEAD_COMMIT"
+	timestamp=$(jq -er '.commit.author.date' <<<"$commit_json")
+	[[ $timestamp =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]] || {
+		printf 'Unsafe commit timestamp for %s: %s\n' "$repository" "$timestamp" >&2
+		exit 1
+	}
+	HEAD_DATE=${timestamp%%T*}
+	HEAD_DATE=${HEAD_DATE//-/}
+}
+
 hash_url() {
 	local url=${1:?source URL required}
+	local cache_name=${2:-}
 	local destination hash
 	download_index=$((download_index + 1))
 	destination="$workdir/source-$download_index"
@@ -114,11 +136,14 @@ hash_url() {
 		printf 'Could not hash source: %s\n' "$url" >&2
 		exit 1
 	}
+	if [[ -n $cache_name ]]; then
+		[[ $cache_name != */* && $cache_name != *[[:space:]]* ]] || {
+			printf 'Unsafe cached source name: %s\n' "$cache_name" >&2
+			exit 1
+		}
+		cp -- "$destination" "$RECIPE_DIR/$cache_name"
+	fi
 	printf '%s\n' "$hash"
-}
-
-mark_resolved() {
-	touch "${1:?recipe directory required}/.resolved"
 }
 
 replace_line() {
@@ -144,106 +169,18 @@ replace_line() {
 	mv -f -- "$temporary" "$file"
 }
 
-update_arch_overview() {
-	local directory="$recipes_root/arch/plasma6-applets-overview-widget"
-	local recipe="$directory/PKGBUILD"
-	local archive_url archive_hash
-	head_resolve HimDek/Overview-Widget-for-Plasma metadata.json
-	archive_url="https://github.com/HimDek/Overview-Widget-for-Plasma/archive/$HEAD_COMMIT.tar.gz"
-	archive_hash=$(hash_url "$archive_url")
-	replace_line "$recipe" '^pkgver=' "pkgver=$HEAD_VERSION"
-	replace_line "$recipe" '^_commit=' "_commit=$HEAD_COMMIT"
-	replace_line "$recipe" '^sha256sums=' "sha256sums=('$archive_hash')"
-	mark_resolved "$directory"
-	printf 'Resolved %-42s %s (%s)\n' \
-		plasma6-applets-overview-widget "$HEAD_VERSION" "${HEAD_COMMIT:0:7}"
-}
-
-update_fedora_appmanager() {
-	local directory="$recipes_root/fedora/appmanager"
-	local recipe="$directory/appmanager.spec"
-	local archive_url archive_hash
-	release_resolve kem-a/AppManager
-	archive_url="https://github.com/kem-a/AppManager/archive/refs/tags/$RELEASE_TAG.tar.gz"
-	archive_hash=$(hash_url "$archive_url")
-	replace_line "$recipe" '^%global tag ' "%global tag $RELEASE_TAG"
-	replace_line "$recipe" '^Version:[[:space:]]' "Version:        $RELEASE_VERSION"
-	printf '%s  %s.tar.gz\n' "$archive_hash" "$RELEASE_TAG" \
-		>"$directory/sources.sha256"
-	mark_resolved "$directory"
-	printf 'Resolved %-42s %s\n' appmanager "$RELEASE_VERSION"
-}
-
-update_fedora_uosc() {
-	local directory="$recipes_root/fedora/mpv-uosc"
-	local recipe="$directory/mpv-uosc.spec"
-	local base archive_hash config_hash license_hash
-	release_resolve tomasklaen/uosc
-	base="https://github.com/tomasklaen/uosc"
-	archive_hash=$(hash_url "$base/releases/download/$RELEASE_TAG/uosc.zip")
-	config_hash=$(hash_url "$base/releases/download/$RELEASE_TAG/uosc.conf")
-	license_hash=$(hash_url "$base/raw/$RELEASE_TAG/LICENSE.LGPL")
-	replace_line "$recipe" '^%global tag ' "%global tag $RELEASE_TAG"
-	replace_line "$recipe" '^Version:[[:space:]]' "Version:        $RELEASE_VERSION"
-	{
-		printf '%s  uosc.zip\n' "$archive_hash"
-		printf '%s  uosc.conf\n' "$config_hash"
-		printf '%s  LICENSE.LGPL\n' "$license_hash"
-	} >"$directory/sources.sha256"
-	mark_resolved "$directory"
-	printf 'Resolved %-42s %s\n' mpv-uosc "$RELEASE_VERSION"
-}
-
-update_fedora_overview() {
-	local directory="$recipes_root/fedora/plasma6-applets-overview-widget"
-	local recipe="$directory/plasma6-applets-overview-widget.spec"
-	local archive_url archive_hash
-	head_resolve HimDek/Overview-Widget-for-Plasma metadata.json
-	archive_url="https://github.com/HimDek/Overview-Widget-for-Plasma/archive/$HEAD_COMMIT.tar.gz"
-	archive_hash=$(hash_url "$archive_url")
-	replace_line "$recipe" '^%global commit ' "%global commit $HEAD_COMMIT"
-	replace_line "$recipe" '^Version:[[:space:]]' "Version:        $HEAD_VERSION"
-	printf '%s  %s.tar.gz\n' "$archive_hash" "$HEAD_COMMIT" \
-		>"$directory/sources.sha256"
-	mark_resolved "$directory"
-	printf 'Resolved %-42s %s (%s)\n' \
-		plasma6-applets-overview-widget "$HEAD_VERSION" "${HEAD_COMMIT:0:7}"
-}
-
-update_fedora_wallhaven() {
-	local directory="$recipes_root/fedora/plasma6-applets-wallhaven-reborn"
-	local recipe="$directory/plasma6-applets-wallhaven-reborn.spec"
-	local repository=Blacksuan19/plasma-wallpaper-wallhaven-reborn
-	local archive_url archive_hash
-	head_resolve "$repository" package/metadata.json
-	archive_url="https://github.com/$repository/archive/$HEAD_COMMIT.tar.gz"
-	archive_hash=$(hash_url "$archive_url")
-	replace_line "$recipe" '^%global commit ' "%global commit $HEAD_COMMIT"
-	replace_line "$recipe" '^Version:[[:space:]]' "Version:        $HEAD_VERSION"
-	printf '%s  %s.tar.gz\n' "$archive_hash" "$HEAD_COMMIT" \
-		>"$directory/sources.sha256"
-	mark_resolved "$directory"
-	printf 'Resolved %-42s %s (%s)\n' \
-		plasma6-applets-wallhaven-reborn "$HEAD_VERSION" "${HEAD_COMMIT:0:7}"
-}
-
-case $distro in
-arch)
-	update_arch_overview
-	;;
-fedora)
-	update_fedora_appmanager
-	update_fedora_uosc
-	update_fedora_overview
-	update_fedora_wallhaven
-	;;
-esac
-
 for recipe_directory in "$recipes_root/$distro"/*; do
 	[[ -d $recipe_directory ]] || continue
-	[[ -f $recipe_directory/.resolved ]] || {
+	updater="$recipe_directory/update.sh"
+	[[ -f $updater && ! -L $updater ]] || {
 		printf 'Local recipe has no updater: %s\n' "$recipe_directory" >&2
 		exit 1
 	}
-	rm -f -- "$recipe_directory/.resolved"
+	(
+		set -Eeuo pipefail
+		# shellcheck disable=SC2034 # consumed by the sourced recipe updater
+		RECIPE_DIR=$recipe_directory
+		# shellcheck disable=SC1090
+		source "$updater"
+	)
 done

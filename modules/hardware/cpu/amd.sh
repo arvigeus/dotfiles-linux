@@ -5,7 +5,9 @@ set -Eeuo pipefail
 source "$SETUP_ROOT/lib/module.sh"
 source "$SETUP_ROOT/lib/hardware.sh"
 
-cpu_vendor_is AuthenticAMD || exit 0
+module_check() {
+	cpu_vendor_is AuthenticAMD
+}
 
 packages=(
 	arch:amd-ucode
@@ -15,4 +17,5 @@ packages=(
 	arch:cpupower
 	fedora:kernel-tools
 )
-pkg_install "${packages[@]}"
+
+module_entrypoint "$@"

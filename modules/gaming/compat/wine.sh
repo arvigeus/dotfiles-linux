@@ -7,4 +7,5 @@ source "$SETUP_ROOT/lib/module.sh"
 packages=(
 	flathub/com.usebottles.bottles
 )
-pkg_install "${packages[@]}"
+
+module_entrypoint "$@"

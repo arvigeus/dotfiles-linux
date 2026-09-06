@@ -9,6 +9,6 @@ are installer-owned templates, not package-source plugins.
 
 These are installer backends, not general distro namespaces. They do not own
 module package dispatch. Native package-manager operations and configuration
-live in `pm/arch/pacman.sh` and `pm/fedora/dnf.sh`;
-demand-driven package source plugins live under `pm/`. See
+live in `sources/arch/pacman.sh` and `sources/fedora/dnf.sh`;
+demand-driven package source plugins live under `sources/`. See
 [the design contract](../../docs/design.md) for that boundary.

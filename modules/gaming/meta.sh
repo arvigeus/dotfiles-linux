@@ -13,4 +13,4 @@ packages=(
 	fedora:dejavu-sans-fonts
 )
 
-pkg_install "${packages[@]}"
+module_entrypoint "$@"

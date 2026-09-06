@@ -8,4 +8,4 @@ packages=(
 	wavemon
 )
 
-pkg_install "${packages[@]}"
+module_entrypoint "$@"

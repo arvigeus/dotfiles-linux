@@ -11,4 +11,4 @@ packages=(
 	wget
 )
 
-pkg_install "${packages[@]}"
+module_entrypoint "$@"

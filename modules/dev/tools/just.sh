@@ -10,4 +10,5 @@ packages=(
 	arch:just-lsp
 	fedora:cargo/just-lsp
 )
-pkg_install "${packages[@]}"
+
+module_entrypoint "$@"

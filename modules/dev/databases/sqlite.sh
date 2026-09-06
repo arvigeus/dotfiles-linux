@@ -9,7 +9,7 @@ packages=(
 	sqlitebrowser
 )
 
-pkg_install "${packages[@]}"
+module_entrypoint "$@"
 
 ## Tips:
 ## - Solve Sudoku with a recursive CTE:

@@ -6,9 +6,14 @@ set -Eeuo pipefail
 source "$SETUP_ROOT/lib/module.sh"
 source "$SETUP_ROOT/lib/webapp.sh"
 
-pkg_install chromium
-webapp_install \
-	'NetHack 3D' \
-	https://jamesiv4.github.io/nethack-3d/ \
-	nethack \
-	'Game;RolePlaying;'
+packages=(chromium)
+
+module_apply() {
+	webapp_install \
+		'NetHack 3D' \
+		https://jamesiv4.github.io/nethack-3d/ \
+		nethack \
+		'Game;RolePlaying;'
+}
+
+module_entrypoint "$@"

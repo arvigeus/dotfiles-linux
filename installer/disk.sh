@@ -7,7 +7,7 @@ partition_disk() {
 	sgdisk --new="1:1MiB:+${EFI_SIZE_MIB}MiB" --typecode=1:ef00 --change-name=1:ESP "$DISK"
 	sgdisk --new=2:0:0 --typecode=2:8309 --change-name=2:cryptroot "$DISK"
 	partprobe "$DISK"
-	udevadm settle
+	udevadm settle --timeout=120
 
 	[[ -b $ESP_PARTITION ]] || die "ESP did not appear at $ESP_PARTITION"
 	[[ -b $CRYPT_PARTITION ]] || die "Encrypted partition did not appear at $CRYPT_PARTITION"

@@ -9,10 +9,12 @@ packages=(
 	git
 )
 
-pkg_install "${packages[@]}"
-
-# https://git-scm.com/docs/git-config
-file_write /etc/gitconfig << 'EOF'
+module_apply() {
+	# https://git-scm.com/docs/git-config
+	file_write /etc/gitconfig <<'EOF'
 [init]
 	defaultBranch = master
 EOF
+}
+
+module_entrypoint "$@"

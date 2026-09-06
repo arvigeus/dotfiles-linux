@@ -17,4 +17,4 @@ packages=(
 	vulkan-tools
 )
 
-pkg_install "${packages[@]}"
+module_entrypoint "$@"

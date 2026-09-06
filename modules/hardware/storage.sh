@@ -4,8 +4,11 @@ set -Eeuo pipefail
 source "$SETUP_ROOT/lib/module.sh"
 
 packages=(
-    udisks2
+	udisks2
 )
 
-pkg_install "${packages[@]}"
-systemctl enable fstrim.timer
+module_apply() {
+	systemctl enable fstrim.timer
+}
+
+module_entrypoint "$@"

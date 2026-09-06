@@ -13,9 +13,12 @@ packages=(
 	podman-compose
 	flathub/com.github.marhkb.Pods
 )
-pkg_install "${packages[@]}"
 
-flatpak_alias pods com.github.marhkb.Pods
+module_apply() {
+	flatpak_alias pods com.github.marhkb.Pods
 
-# The user socket is intentionally not enabled here; there is no user manager
-# in the candidate root. Users may enable podman.socket after login.
+	# The user socket is intentionally not enabled here; there is no user manager
+	# in the candidate root. Users may enable podman.socket after login.
+}
+
+module_entrypoint "$@"

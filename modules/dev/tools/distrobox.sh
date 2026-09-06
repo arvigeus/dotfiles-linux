@@ -11,6 +11,8 @@ packages=(
 	flathub/io.github.dvlv.boxbuddyrs
 )
 
-pkg_install "${packages[@]}"
+module_apply() {
+	flatpak_alias boxbuddy io.github.dvlv.boxbuddyrs
+}
 
-flatpak_alias boxbuddy io.github.dvlv.boxbuddyrs
+module_entrypoint "$@"

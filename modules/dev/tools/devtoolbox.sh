@@ -9,5 +9,9 @@ source "$SETUP_ROOT/lib/flatpak.sh"
 packages=(
 	flathub/me.iepure.devtoolbox
 )
-pkg_install "${packages[@]}"
-flatpak_alias devtoolbox me.iepure.devtoolbox
+
+module_apply() {
+	flatpak_alias devtoolbox me.iepure.devtoolbox
+}
+
+module_entrypoint "$@"

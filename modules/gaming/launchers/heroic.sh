@@ -9,5 +9,9 @@ source "$SETUP_ROOT/lib/flatpak.sh"
 packages=(
 	flathub/com.heroicgameslauncher.hgl
 )
-pkg_install "${packages[@]}"
-flatpak_alias heroic com.heroicgameslauncher.hgl
+
+module_apply() {
+	flatpak_alias heroic com.heroicgameslauncher.hgl
+}
+
+module_entrypoint "$@"

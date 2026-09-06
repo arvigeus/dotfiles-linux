@@ -9,5 +9,9 @@ source "$SETUP_ROOT/lib/flatpak.sh"
 packages=(
 	flathub/net.lutris.Lutris
 )
-pkg_install "${packages[@]}"
-flatpak_alias lutris net.lutris.Lutris
+
+module_apply() {
+	flatpak_alias lutris net.lutris.Lutris
+}
+
+module_entrypoint "$@"

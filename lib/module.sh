@@ -7,9 +7,97 @@ source "$SETUP_ROOT/lib/github.sh"
 	return 1 2>/dev/null || exit 1
 }
 # shellcheck disable=SC1090
-source "$SETUP_ROOT/pm/$DISTRO/$PACKAGE_MANAGER.sh"
+source "$SETUP_ROOT/sources/$DISTRO/$PACKAGE_MANAGER.sh"
 # shellcheck source=lib/package.sh
 source "$SETUP_ROOT/lib/package.sh"
+
+# A module is evaluated once to emit a mutation-free plan and once, after all
+# packages are present, to apply configuration. Arrays are the public data
+# format; callers never source multiple modules into one shell.
+_module_emit_array() {
+	local record_type=${1:?record type required}
+	local array_name=${2:?array name required}
+	declare -p "$array_name" >/dev/null 2>&1 || return 0
+	local -n values=$array_name
+	local value
+	for value in "${values[@]}"; do
+		[[ -n $value && $value != *$'\t'* && $value != *$'\n'* ]] || {
+			printf 'Invalid %s declaration in %s: %q\n' \
+				"$record_type" "${MODULE_ID:-unknown}" "$value" >&2
+			return 1
+		}
+		printf '%s\t%s\n' "$record_type" "$value" >>"$MODULE_PLAN_FILE"
+	done
+}
+
+module_entrypoint() {
+	local phase=${MODULE_PHASE:?MODULE_PHASE is required}
+	case $phase in
+	plan)
+		: "${MODULE_PLAN_FILE:?MODULE_PLAN_FILE is required}"
+		: >"$MODULE_PLAN_FILE"
+		if declare -F module_check >/dev/null && ! module_check; then
+			printf 'skip\tmodule check did not match\n' >>"$MODULE_PLAN_FILE"
+			return 0
+		fi
+
+		local has_members=false
+		# shellcheck disable=SC2154 # optional public module declaration
+		if declare -p members >/dev/null 2>&1; then
+			local -n module_members=members
+			((${#module_members[@]} == 0)) || has_members=true
+		fi
+		if [[ $has_members == true ]]; then
+			local declaration
+			for declaration in packages sources requires; do
+				if declare -p "$declaration" >/dev/null 2>&1; then
+					printf 'Aggregate module %s also declares %s\n' \
+						"${MODULE_ID:-unknown}" "$declaration" >&2
+					return 1
+				fi
+			done
+			if declare -F module_apply >/dev/null; then
+				printf 'Aggregate module %s must contain only members\n' \
+					"${MODULE_ID:-unknown}" >&2
+				return 1
+			fi
+			_module_emit_array member members
+			return
+		fi
+
+		printf 'leaf\t%s\n' "${MODULE_ID:-unknown}" >>"$MODULE_PLAN_FILE"
+		_module_emit_array require requires
+		_module_emit_array source sources
+		_module_emit_array package packages
+		;;
+	apply)
+		if declare -F module_check >/dev/null && ! module_check; then
+			printf 'Module check changed after planning: %s\n' \
+				"${MODULE_ID:-unknown}" >&2
+			return 1
+		fi
+		if [[ -d $MODULE_DIR/files ]]; then
+			cp -a --no-preserve=ownership -- \
+				"$MODULE_DIR/files/." "${MODULE_ROOT:-/}"
+		fi
+		if declare -F module_apply >/dev/null; then
+			module_apply
+		fi
+		;;
+	healthcheck)
+		if declare -F module_check >/dev/null && ! module_check; then
+			return 0
+		fi
+		if declare -F module_healthcheck >/dev/null; then
+			module_healthcheck
+		fi
+		;;
+	*)
+		printf 'Unknown module phase: %s\n' "$phase" >&2
+		return 1
+		;;
+	esac
+}
 
 # Request that machine-local state be copied from the active root after all
 # modules finish. Globs are expanded by the host, not inside the candidate.

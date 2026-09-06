@@ -8,15 +8,17 @@ source "$SETUP_ROOT/lib/hardware.sh"
 
 # Logitech USB vendor ID. A disconnected/Bluetooth-only device deliberately
 # does not opt the machine into this device-specific configuration.
-usb_vendor_present 046d || exit 0
+module_check() {
+	usb_vendor_present 046d
+}
 
 packages=(
-    arch:chaotic-aur/logiops
-    fedora:logiops
+	arch:chaotic-aur/logiops
+	fedora:logiops
 )
-pkg_install "${packages[@]}"
 
-file_write /etc/logid.cfg <<'EOF'
+module_apply() {
+	file_write /etc/logid.cfg <<'EOF'
 devices: (
 {
     name: "Wireless Mouse MX Master 3";
@@ -39,4 +41,7 @@ devices: (
 }
 );
 EOF
-systemctl enable logid.service
+	systemctl enable logid.service
+}
+
+module_entrypoint "$@"

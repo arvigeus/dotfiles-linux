@@ -7,13 +7,17 @@ packages=(
 	arch:networkmanager
 	fedora:NetworkManager
 
-    # Network lookup and troubleshooting tools
+	# Network lookup and troubleshooting tools
 	whois
-    # Provides dig, host, nslookup
-    fedora:bind-utils
-    arch:bind
+	# Provides dig, host, nslookup
+	fedora:bind-utils
+	arch:bind
 )
-pkg_install "${packages[@]}"
-systemctl enable NetworkManager.service
 
-preserve_path /etc/NetworkManager/system-connections
+module_apply() {
+	systemctl enable NetworkManager.service
+
+	preserve_path /etc/NetworkManager/system-connections
+}
+
+module_entrypoint "$@"

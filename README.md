@@ -66,6 +66,10 @@ Run from the installed system using a current clone of this repository:
 sudo ./rebuild.sh
 ```
 
+Use `sudo ./rebuild.sh --healthchecks` to run selected modules' optional online
+health checks after application. They are excluded from the default critical
+path.
+
 The running slot is never rewritten. The inactive root is recreated, all
 modules run, selected machine state is preserved, home defaults are reconciled,
 and the new UKI is placed first in UEFI boot order. The old slot remains in the
@@ -77,11 +81,10 @@ available while testing.
 
 ## Modules
 
-Init modules under the flat `modules/00_init/` directory execute first in
-numeric filename order. After local recipes are resolved, all remaining
-`modules/**/*.sh` files execute in C-locale path order inside the candidate.
-Modules are isolated trusted-root Bash scripts and must guard themselves when
-they only apply to a distro or piece of hardware.
+`hosts/<hostname>.sh` explicitly selects modules. Aggregate modules contain an
+ordered `members` array; selecting `gaming` expands its declared children,
+while selecting `gaming/steam` installs only Steam. Filesystem discovery is not
+part of execution.
 
 ```bash
 source "$SETUP_ROOT/lib/module.sh"
@@ -93,38 +96,43 @@ packages=(
     flathub/org.example.Application
 )
 
-pkg_install "${packages[@]}"
+module_apply() {
+    # Idempotent configuration, after packages are installed.
+    :
+}
+
+module_entrypoint "$@"
 ```
+
+Planning, source preparation, grouped package installation, and module
+application are separate deterministic phases. A module can co-locate an
+automatic root overlay in `files/`, a one-module package source in
+`sources/<distro>/`, and native build recipes in `packages/<distro>/`.
+Conflicting paths between selected `files/` overlays and symlinks inside an
+overlay are rejected during planning.
 
 Package source plugins are demand-driven:
 
 ```text
-pm/arch/pacman.sh       Arch native manager and its configuration
-pm/fedora/dnf.sh        Fedora native manager and its configuration
-pm/arch/alhp.sh         Arch x86-64-v3 optimized overlay (CPU-gated)
-pm/flathub.sh           shared system Flatpak source
-pm/npm.sh               shared system-wide npm source
-pm/arch/aur.sh          Arch-only AUR source
-pm/fedora/claude.sh     Fedora-only Anthropic RPM source
-pm/fedora/openai.sh     Fedora-only official ChatGPT bootstrap source
-pm/fedora/terra.sh      Fedora-only Terra source
+sources/arch/pacman.sh       Arch native manager and its configuration
+sources/fedora/dnf.sh        Fedora native manager and its configuration
+sources/arch/alhp.sh         Arch x86-64-v3 optimized overlay (CPU-gated)
+sources/flathub.sh           shared system Flatpak source
+sources/npm.sh               shared system-wide npm source
+sources/arch/aur.sh          Arch-only AUR source
+sources/fedora/terra.sh      Fedora-only Terra source
 ```
 
 If no selected declaration references Flathub, Flatpak and Flathub are not
-installed or enabled. The same rule applies to every plugin. `modules/00_init/`
-is the explicit early phase for prerequisites and global policy such as ALHP,
-before recipe resolution and bulk package installation. Its flat files use
-names such as `00_something.sh` and `01_other.sh`. See the design contract for
-the exact grammar and plugin API.
+installed or enabled. The same rule applies to every source. Global overlays
+that do not correspond to one package are still explicit module declarations;
+for example `base/package-sources` declares `sources=(arch:alhp)`.
 
 Local package recipes are used only when an enabled repository or the AUR does
-not already carry the package. They live in `packages/<distro>/<name>/`:
-`arch:pkgbuild/<name>` builds `packages/arch/<name>/PKGBUILD`, while
-`fedora:rpmspec/<name>` builds `packages/fedora/<name>/<name>.spec` after
-verifying the downloaded sources against `sources.sha256`. Bootstrap and
-rebuild resolve these local recipes to the latest stable release (or latest
-default-branch commit) in an ephemeral copy after init and before ordinary
-modules run.
+not already carry the package. They live beside their owning module under
+`packages/<distro>/<name>/`. Only recipes belonging to selected modules are
+copied and resolved. See [the module contract](modules/README.md) and
+[the design document](docs/design.md) for the exact rules.
 
 ## File declarations
 
@@ -137,6 +145,21 @@ EOF
 `file_append` accepts the same metadata options. New files default to
 `0644 root:root`; unspecified metadata is retained when replacing an existing
 file.
+
+## Failure diagnosis
+
+Major installer phases and every module transition are logged before they run.
+The latest phase is written to `/run/system-provision-state` and, after the
+candidate root is mounted, `/var/lib/system/provision-state` in that candidate.
+On failure the cleanup handler prints the last recorded phase while preserving
+the original nonzero exit status.
+
+Module planning, application, health checks, local-recipe resolution, bulk
+package installation, base installation, and UKI generation have hard
+deadlines. A stalled network request, package-manager lock, or subprocess thus
+becomes a named failure. A rebuild rerun recreates the inactive candidate; a
+checkpoint is diagnostic and never causes partially completed work to be
+skipped.
 
 ## VM testing
 
@@ -163,6 +186,10 @@ poweroff
 
 Then start the installed disk with `./vm/run.sh`. Keep separate VM disks and
 OVMF variable files when testing Arch and Fedora.
+
+The QEMU helpers are currently interactive. A successful shell test run is not
+a substitute for completing bootstrap, boot, rebuild, and second boot in both
+an Arch guest and a Fedora guest.
 
 Fedora-specific backend assumptions and validation points are documented in
 [docs/fedora.md](docs/fedora.md). Gaming-session details are in

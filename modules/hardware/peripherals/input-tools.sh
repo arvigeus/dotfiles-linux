@@ -8,4 +8,4 @@ packages=(
 	evtest
 )
 
-pkg_install "${packages[@]}"
+module_entrypoint "$@"

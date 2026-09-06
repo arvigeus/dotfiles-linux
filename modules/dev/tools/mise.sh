@@ -10,9 +10,8 @@ packages=(
 	arch:mise
 	fedora:mise/mise
 )
-pkg_install "${packages[@]}"
-
-shell_profile mise <<'EOF'
+module_apply() {
+	shell_profile mise <<'EOF'
 if command -v mise >/dev/null 2>&1; then
 	if [ -n "${BASH_VERSION:-}" ]; then
 		eval "$(mise activate bash)"
@@ -22,8 +21,11 @@ if command -v mise >/dev/null 2>&1; then
 fi
 EOF
 
-file_append /etc/fish/conf.d/mise.fish <<'EOF'
+	file_write /etc/fish/conf.d/mise.fish <<'EOF'
 if command -q mise
 	mise activate fish | source
 end
 EOF
+}
+
+module_entrypoint "$@"

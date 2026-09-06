@@ -1,0 +1,16 @@
+pkgname=arkenfox-user.js
+pkgver=144.0
+pkgrel=1
+pkgdesc='Arkenfox Firefox user.js privacy and security template'
+arch=('any')
+url='https://github.com/arkenfox/user.js'
+license=('MIT')
+source=("https://github.com/arkenfox/user.js/archive/refs/tags/${pkgver}.tar.gz")
+sha256sums=('75a46d748b34249a080551109bcdd01698e4838318e0c9ab0f1f3b2865342371')
+
+package() {
+	install -Dm0644 "$srcdir/user.js-$pkgver/user.js" \
+		"$pkgdir/usr/share/arkenfox/user.js"
+	install -Dm0644 "$srcdir/user.js-$pkgver/LICENSE.txt" \
+		"$pkgdir/usr/share/licenses/$pkgname/LICENSE.txt"
+}

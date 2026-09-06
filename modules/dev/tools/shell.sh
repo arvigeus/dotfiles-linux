@@ -6,7 +6,7 @@ source "$SETUP_ROOT/lib/module.sh"
 
 packages=(
 	shellcheck # https://www.shellcheck.net/
-	shfmt # https://github.com/mvdan/sh
+	shfmt      # https://github.com/mvdan/sh
 )
 
-pkg_install "${packages[@]}"
+module_entrypoint "$@"

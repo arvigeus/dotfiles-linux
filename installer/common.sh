@@ -51,11 +51,12 @@ initialize_project() {
 	PROJECT_ID=system
 	readonly PROJECT_ID
 	export PROJECT_ID
+	rm -f -- "/run/$PROJECT_ID-provision-state" "/run/$PROJECT_ID-provision-state.tmp"
 	detect_native_distribution
 	# shellcheck disable=SC1090
 	source "$PROJECT_ROOT/installer/distros/$DISTRO/backend.sh"
 	# shellcheck disable=SC1090
-	source "$PROJECT_ROOT/pm/$DISTRO/$PACKAGE_MANAGER.sh"
+	source "$PROJECT_ROOT/sources/$DISTRO/$PACKAGE_MANAGER.sh"
 	# shellcheck source=lib/package.sh
 	source "$PROJECT_ROOT/lib/package.sh"
 	SYSTEM_CONFIG=/etc/$PROJECT_ID/config
@@ -83,7 +84,7 @@ prompt_bootstrap_config() {
 	[[ -b $DISK ]] || die "Installation disk is not a block device: $DISK"
 	[[ $(lsblk -dnro TYPE "$DISK") == disk ]] || die "Select a complete disk, not a partition: $DISK"
 
-	prompt_value HOSTNAME "Hostname" workstation
+	prompt_value HOSTNAME "Host profile and hostname" zephyrus
 	[[ $HOSTNAME =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]] || die "Invalid hostname: $HOSTNAME"
 	prompt_value USERNAME "Login username" user
 	[[ $USERNAME =~ ^[a-z_][a-z0-9_-]*$ ]] || die "Invalid username: $USERNAME"
@@ -125,6 +126,18 @@ finalize_config() {
 	: "${LOCALE:?Missing locale}"
 	: "${KEYMAP:?Missing keymap}"
 
+	[[ $DISK == /dev/* && $DISK != *..* && -b $DISK ]] ||
+		die "Configured installation disk is not a block device below /dev: $DISK"
+	[[ $(lsblk -dnro TYPE "$DISK") == disk ]] ||
+		die "Configured installation disk is not a complete disk: $DISK"
+	[[ $HOSTNAME =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]] || die "Invalid hostname: $HOSTNAME"
+	[[ $USERNAME =~ ^[a-z_][a-z0-9_-]*$ ]] || die "Invalid username: $USERNAME"
+	[[ $TIMEZONE =~ ^[a-zA-Z0-9_+.-]+(/[a-zA-Z0-9_+.-]+)*$ && $TIMEZONE != *..* ]] ||
+		die "Invalid timezone: $TIMEZONE"
+	[[ -f /usr/share/zoneinfo/$TIMEZONE ]] || die "Unknown timezone: $TIMEZONE"
+	[[ $LOCALE =~ ^[a-zA-Z0-9_.@-]+$ ]] || die "Invalid locale: $LOCALE"
+	[[ $KEYMAP =~ ^[a-zA-Z0-9_.+-]+$ ]] || die "Invalid keymap: $KEYMAP"
+
 	local partition_separator=
 	[[ $DISK == *[0-9] ]] && partition_separator=p
 	export ESP_PARTITION_NUMBER=1
@@ -149,6 +162,12 @@ finalize_config() {
 	export TOP_LEVEL="$WORK_ROOT/top"
 	export MAPPER_DEVICE="/dev/mapper/$CRYPT_NAME"
 	distro_set_defaults
+}
+
+require_host_definition() {
+	local host="$PROJECT_ROOT/hosts/${HOSTNAME:?Missing hostname}.sh"
+	[[ -f $host && ! -L $host ]] ||
+		die "Host definition not found: $host"
 }
 
 load_bootstrap_config() {
@@ -196,6 +215,44 @@ require_commands() {
 	for command in "$@"; do
 		command -v "$command" >/dev/null 2>&1 || die "Required command not found: $command"
 	done
+}
+
+provision_checkpoint() {
+	local phase=${1:?checkpoint phase required}
+	local detail=${2:-}
+	local runtime_state="/run/${PROJECT_ID:?project ID required}-provision-state"
+	local temporary="$runtime_state.tmp"
+	{
+		printf 'phase=%q\n' "$phase"
+		printf 'detail=%q\n' "$detail"
+		printf 'updated_at=%q\n' "$(date --iso-8601=seconds)"
+	} >"$temporary"
+	mv -f -- "$temporary" "$runtime_state"
+
+	if [[ -n ${TARGET_ROOT:-} ]] && mountpoint -q "$TARGET_ROOT"; then
+		local state_dir="$TARGET_ROOT/var/lib/$PROJECT_ID"
+		install -d -m 0755 "$state_dir"
+		cp -- "$runtime_state" "$state_dir/provision-state"
+	fi
+}
+
+report_provision_failure() {
+	local status=${1:?exit status required}
+	((status != 0)) || return 0
+	warn "Provisioning failed with exit status $status"
+	if [[ -z ${PROJECT_ID:-} ]]; then
+		warn "No checkpoint was recorded; failure occurred before project initialization"
+		return 0
+	fi
+	local state="/run/$PROJECT_ID-provision-state"
+	if [[ -f $state ]]; then
+		warn "Last checkpoint:"
+		while IFS= read -r line; do
+			printf '  %s\n' "$line" >&2
+		done <"$state"
+	else
+		warn "No checkpoint was recorded; failure occurred during initial validation"
+	fi
 }
 
 confirm_destroy_disk() {
@@ -257,6 +314,18 @@ target_chroot() {
 		cp -L -- /etc/resolv.conf "$TARGET_ROOT/etc/resolv.conf"
 	fi
 	chroot "$TARGET_ROOT" "$@"
+}
+
+# Run commands that need to create nested namespaces from a real filesystem
+# root. A plain chroot is deliberately barred by the kernel from creating a
+# user namespace, which prevents Flatpak/bubblewrap from deploying extra-data
+# applications. The private mount namespace also contains any mounts made by a
+# module so a failed sandbox cannot leave the installer's mount stack busy.
+target_namespace() {
+	prepare_target_chroot
+	unshare --mount --fork --kill-child -- \
+		bash "$PROJECT_ROOT/installer/pivot-root.sh" \
+		"$TARGET_ROOT" "/run/$PROJECT_ID/installer/pivot-root.sh" "$@"
 }
 
 cleanup_mounts() {

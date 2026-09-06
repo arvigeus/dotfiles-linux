@@ -4,8 +4,9 @@ set -Eeuo pipefail
 PROJECT_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 SETUP_ROOT="$PROJECT_ROOT/tests/fixtures"
 DISTRO=arch
+PROJECT_ID=system
 PACKAGE_TEST_LOG=$(mktemp)
-export SETUP_ROOT DISTRO PACKAGE_TEST_LOG
+export SETUP_ROOT DISTRO PROJECT_ID PACKAGE_TEST_LOG
 trap 'rm -f -- "$PACKAGE_TEST_LOG"' EXIT
 
 source "$PROJECT_ROOT/lib/package.sh"
@@ -44,8 +45,8 @@ $actual"
 
 pkg_install nano arch:linux fedora:ignored \
 	test/one test/runtime/org.example.Platform/x86_64/stable \
-	arch:test/two arch:lib32-example
-assert_log $'native-install nano linux\nshared-install one runtime/org.example.Platform/x86_64/stable\narch-install two\nmultilib-install lib32-example'
+	arch:test/two arch:extra/nodejs arch:lib32-example
+assert_log $'native-install nano linux\nshared-install one runtime/org.example.Platform/x86_64/stable\narch-install two\nextra-install nodejs\nmultilib-install lib32-example'
 
 pkg_remove nano test/one arch:test/two
 assert_log $'native-remove nano\nshared-remove one\narch-remove two'
@@ -66,5 +67,29 @@ pkg_install aur/example 2>/dev/null && fail 'unscoped AUR unexpectedly resolved'
 pkg_install arch/example 2>/dev/null && fail 'distro/source syntax became native syntax'
 pkg_install fedorra:example 2>/dev/null && fail 'unknown distro scope was ignored'
 pkg_install test/ 2>/dev/null && fail 'empty package name was accepted'
+
+plan=$(mktemp)
+printf '%s\t%s\t%s\n' \
+	test/leaf "$SETUP_ROOT/module" source:arch:test \
+	test/leaf "$SETUP_ROOT/module" nano \
+	test/leaf "$SETUP_ROOT/module" nano \
+	test/leaf "$SETUP_ROOT/module" arch:owned/one >"$plan"
+pkg_install_plan "$plan"
+rm -f -- "$plan"
+assert_log $'arch-enable\nowned-prepare\nnative-install nano\nowned-install one'
+
+plan=$(mktemp)
+printf '%s\t%s\t%s\n' test/leaf "$SETUP_ROOT/module" 'source:../test' >"$plan"
+if pkg_install_plan "$plan" 2>/dev/null; then
+	fail 'path traversal in an explicit source selector was accepted'
+fi
+rm -f -- "$plan"
+
+plan=$(mktemp)
+printf '%s\t%s\t%s\n' test/leaf "$SETUP_ROOT/module" 'fedora:missing/package' >"$plan"
+if pkg_install_plan "$plan" 2>/dev/null; then
+	fail 'missing source for the other distro was not detected during validation'
+fi
+rm -f -- "$plan"
 
 printf 'package contract: ok\n'

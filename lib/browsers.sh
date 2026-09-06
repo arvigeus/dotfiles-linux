@@ -88,6 +88,7 @@ _firefox_install_extension() (
 	tmpdir=$(mktemp -d)
 	trap 'rm -rf -- "$tmpdir"' EXIT
 	curl --fail --silent --show-error --location \
+		--connect-timeout 20 --max-time 120 --retry 3 --retry-all-errors \
 		--output "$tmpdir/$filename" "$url"
 	unzip -q "$tmpdir/$filename" -d "$tmpdir/unpacked"
 

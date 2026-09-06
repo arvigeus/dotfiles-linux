@@ -9,5 +9,8 @@ source "$SETUP_ROOT/lib/flatpak.sh"
 packages=(
 	flatpark/app.yaak.Yaak
 )
-pkg_install "${packages[@]}"
-flatpak_alias yaak app.yaak.Yaak
+module_apply() {
+	flatpak_alias yaak app.yaak.Yaak
+}
+
+module_entrypoint "$@"

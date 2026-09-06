@@ -3,18 +3,16 @@ set -Eeuo pipefail
 
 source "$SETUP_ROOT/lib/module.sh"
 
-
 packages=(
 	mangohud
 	arch:lib32-mangohud
 	fedora:mangohud.i686
 )
 
-pkg_install "${packages[@]}"
-
-# Installing MangoHud does not inject it globally. This compact default is used
-# only when a game or launcher explicitly requests the overlay.
-file_write "$HOME/.config/MangoHud/MangoHud.conf" <<'EOF'
+module_apply() {
+	# Installing MangoHud does not inject it globally. This compact default is used
+	# only when a game or launcher explicitly requests the overlay.
+	file_write "$HOME/.config/MangoHud/MangoHud.conf" <<'EOF'
 position=top-left
 fps
 frametime
@@ -29,3 +27,6 @@ engine_version
 wine
 toggle_hud=Shift_R+F12
 EOF
+}
+
+module_entrypoint "$@"

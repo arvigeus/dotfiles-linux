@@ -7,16 +7,19 @@
 _repo_health_fetch() {
 	local raw
 	raw=$(curl --silent --show-error --location \
+		--connect-timeout 10 --max-time 30 --retry 2 --retry-all-errors \
 		--write-out $'\n%{http_code}' "$1") || return 1
 	_repo_health_code=${raw##*$'\n'}
 	_repo_health_body=${raw%$'\n'*}
 }
 
 repo_health() {
-	# Modules execute independently, so this helper provides its own tools rather
-	# than relying on an earlier package module.
-	pkg_is_installed curl || pkg_install curl
-	pkg_is_installed jq || pkg_install jq
+	for command in curl jq; do
+		command -v "$command" >/dev/null 2>&1 || {
+			printf 'warning: repository healthcheck requires %s\n' "$command" >&2
+			return 0
+		}
+	done
 
 	local spec=${1:?repo_health requires a repository}
 	shift

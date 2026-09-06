@@ -15,4 +15,8 @@ source "$SETUP_ROOT/lib/env.sh"
 # Manually reload bashrc: source ~/.bashrc
 
 # Drop duplicate consecutive lines from history.
-shell_set_env bash HISTCONTROL ignoredups
+module_apply() {
+	shell_set_env bash HISTCONTROL ignoredups
+}
+
+module_entrypoint "$@"

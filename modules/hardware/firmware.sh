@@ -5,8 +5,13 @@ set -Eeuo pipefail
 
 source "$SETUP_ROOT/lib/module.sh"
 
-pkg_install fwupd
-systemctl enable fwupd-refresh.timer
+packages=(fwupd)
+
+module_apply() {
+	systemctl enable fwupd-refresh.timer
+}
 
 # Firmware updates are deliberately not executed against the build host's
-# hardware. Run `fwupdmgr update` manually on the booted target.
+# hardware or from a pacman hook. Run `fwupdmgr update` manually on the booted
+# target so firmware changes remain an explicit, physical-machine action.
+module_entrypoint "$@"

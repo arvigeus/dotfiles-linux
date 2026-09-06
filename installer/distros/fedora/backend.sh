@@ -42,7 +42,7 @@ distro_install_base_system() {
 
 	log "Installing a clean Fedora $DISTRO_VERSION_ID base"
 	prepare_target_chroot
-	dnf -y \
+	timeout --foreground --signal=INT --kill-after=30s 7200 dnf -y \
 		--installroot="$TARGET_ROOT" \
 		--releasever="$DISTRO_VERSION_ID" \
 		--use-host-config \
@@ -83,7 +83,7 @@ distro_generate_uki() {
 		"$PROJECT_ROOT/installer/distros/fedora/95-system-uki.install" \
 		"$TARGET_ROOT/etc/kernel/install.d/95-system-uki.install"
 
-	target_chroot dracut \
+	target_chroot timeout --foreground --signal=INT --kill-after=30s 1800 dracut \
 		--force \
 		--no-hostonly \
 		--add "crypt btrfs systemd systemd-initrd i18n" \

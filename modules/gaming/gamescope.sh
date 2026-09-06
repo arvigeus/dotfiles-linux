@@ -6,4 +6,5 @@ source "$SETUP_ROOT/lib/module.sh"
 packages=(
 	gamescope
 )
-pkg_install "${packages[@]}"
+
+module_entrypoint "$@"

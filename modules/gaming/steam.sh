@@ -3,7 +3,6 @@ set -Eeuo pipefail
 
 source "$SETUP_ROOT/lib/module.sh"
 
-
 packages=(
 	arch:multilib/steam
 	fedora:rpmfusion/steam
@@ -11,4 +10,5 @@ packages=(
 	arch:multilib/steam-devices
 	fedora:steam-devices
 )
-pkg_install "${packages[@]}"
+
+module_entrypoint "$@"

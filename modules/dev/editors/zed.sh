@@ -6,18 +6,18 @@ set -Eeuo pipefail
 source "$SETUP_ROOT/lib/module.sh"
 
 packages=(
-  arch:zed
-  fedora:terra/zed
+	arch:zed
+	fedora:terra/zed
 )
-pkg_install "${packages[@]}"
+module_apply() {
 
-## Related:
-## - https://zed-themes.com
-## - https://zed.dev/extensions
-## - https://zed.dev/theme-builder
+	## Related:
+	## - https://zed-themes.com
+	## - https://zed.dev/extensions
+	## - https://zed.dev/theme-builder
 
-# https://zed.dev/docs/reference/all-settings
-file_write "$HOME/.config/zed/settings.json" <<'EOF'
+	# https://zed.dev/docs/reference/all-settings
+	file_write "$HOME/.config/zed/settings.json" <<'EOF'
 {
   "git": {
     "inline_blame": {
@@ -30,18 +30,13 @@ file_write "$HOME/.config/zed/settings.json" <<'EOF'
     }
   },
   "agent": {
-    "default_model": {
-      "provider": "openrouter",
-      "model": "google/gemma-4-31b-it:free"
-    },
+    "notify_when_agent_waiting": true,
     "play_sound_when_agent_done": true
   },
   "ui_font_size": 16,
   "buffer_font_size": 14,
   "theme": {
-    "mode": "system",
-    "light": "One Light",
-    "dark": "One Dark Pro"
+    "mode": "system"
   },
   "auto_install_extensions": {
     "html": true,
@@ -58,30 +53,13 @@ file_write "$HOME/.config/zed/settings.json" <<'EOF'
     "comment": true,
     "env": true,
     "git-firefly": true,
-    "harper": true,
-    "one-dark-pro": true
+    "harper": true
   },
   "file_types": {
     "Dockerfile": ["Dockerfile.*", "Containerfile.*"]
   }
 }
 EOF
+}
 
-# https://zed.dev/docs/key-bindings
-file_write "$HOME/.config/zed/keymap.json" <<'EOF'
-[
-  {
-    "context": "Workspace",
-    "bindings": {
-      "ctrl-`": "terminal_panel::ToggleFocus"
-    }
-  },
-  {
-    "context": "Terminal",
-    "bindings": {
-      "ctrl-`": "workspace::ToggleBottomDock",
-      "cmd-n": "workspace::NewTerminal"
-    }
-  }
-]
-EOF
+module_entrypoint "$@"

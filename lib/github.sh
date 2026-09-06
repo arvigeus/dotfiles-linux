@@ -6,6 +6,10 @@ _github_api() {
 		--silent \
 		--show-error \
 		--location \
+		--connect-timeout 20 \
+		--max-time 120 \
+		--retry 3 \
+		--retry-all-errors \
 		--header 'Accept: application/vnd.github+json' \
 		--header 'X-GitHub-Api-Version: 2022-11-28' \
 		"https://api.github.com/$1"
@@ -35,7 +39,9 @@ github_raw_url() {
 # Read a GitHub blob or raw URL to stdout.
 github_read_file() {
 	local url=${1:?github_read_file requires a URL}
-	curl --fail --silent --show-error --location "$(github_raw_url "$url")"
+	curl --fail --silent --show-error --location \
+		--connect-timeout 20 --max-time 120 --retry 3 --retry-all-errors \
+		"$(github_raw_url "$url")"
 }
 
 # Atomically download a GitHub blob or raw URL to a file.
@@ -47,6 +53,7 @@ github_download() {
 	mkdir -p "$(dirname -- "$output")"
 	rm -f -- "$temporary"
 	if ! curl --fail --silent --show-error --location \
+		--connect-timeout 20 --max-time 300 --retry 3 --retry-all-errors \
 		--output "$temporary" "$(github_raw_url "$url")"; then
 		rm -f -- "$temporary"
 		return 1

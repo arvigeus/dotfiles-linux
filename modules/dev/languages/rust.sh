@@ -11,4 +11,9 @@ packages=(
 	fedora:cargo # dependency of rust for arch
 )
 
-pkg_install "${packages[@]}"
+# To use rustup instead of the distro Rust toolchain, remove the distro Rust
+# packages, install rustup, then run:
+#   rustup default stable
+#   rustup component add clippy rustfmt rust-analyzer rust-src rust-lldb
+
+module_entrypoint "$@"

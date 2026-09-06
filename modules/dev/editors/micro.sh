@@ -9,7 +9,7 @@ packages=(
 	micro
 )
 
-pkg_install "${packages[@]}"
+module_entrypoint "$@"
 
 ## Keybindings:
 # `Ctrl + Q`: Quit

@@ -2,8 +2,15 @@
 set -Eeuo pipefail
 
 source "$SETUP_ROOT/lib/module.sh"
-[[ $DISTRO == arch ]] || exit 0
 
-file_write /etc/makepkg.conf.d/makeflags.conf << EOF
+module_check() {
+	[[ $DISTRO == arch ]]
+}
+
+module_apply() {
+	file_write /etc/makepkg.conf.d/makeflags.conf <<EOF
 MAKEFLAGS="--jobs=$(nproc)"
 EOF
+}
+
+module_entrypoint "$@"

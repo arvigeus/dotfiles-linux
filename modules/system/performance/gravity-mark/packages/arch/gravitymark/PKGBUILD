@@ -1,0 +1,19 @@
+# shellcheck shell=bash disable=SC2034,SC2154
+pkgname=gravitymark
+pkgver=1.89
+pkgrel=1
+pkgdesc='Cross-platform GPU benchmark'
+arch=('x86_64')
+url='https://gravitymark.tellusim.com/'
+license=('LicenseRef-Proprietary')
+source=("GravityMark_$pkgver.run::https://tellusim.com/download/GravityMark_$pkgver.run")
+sha256sums=('de090c7b9e40f10f225d9393f2cf73a660ad4edc21f6b333eea3190a8722e005')
+
+package() {
+	install -Dm0755 "GravityMark_$pkgver.run" "$pkgdir/opt/gravity-mark/GravityMark.run"
+	install -d "$pkgdir/usr/bin"
+	printf '%s\n' '#!/usr/bin/env bash' \
+		'exec /opt/gravity-mark/GravityMark.run "$@"' \
+		>"$pkgdir/usr/bin/gravity-mark"
+	chmod 0755 "$pkgdir/usr/bin/gravity-mark"
+}

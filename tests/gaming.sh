@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 PROJECT_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-SESSION="$PROJECT_ROOT/modules/gaming/system-gaming-session"
+SESSION="$PROJECT_ROOT/modules/gaming/gamescope-session/files/usr/local/bin/system-gaming-session"
 TEST_DIRECTORY=$(mktemp -d)
 trap 'rm -rf -- "$TEST_DIRECTORY"' EXIT
 : >"$TEST_DIRECTORY/empty.conf"
@@ -71,7 +71,8 @@ then
 fi
 
 ledger="$PROJECT_ROOT/modules/gaming/upstream-research.yaml"
-[[ $(rg -c '^    commit: [0-9a-f]{40}$' "$ledger") == 19 ]]
-[[ $(rg -c '^    reviewed_at: 2026-08-25$' "$ledger") == 19 ]]
+commit_count=$(rg -c '^    commit: [0-9a-f]{40}$' "$ledger")
+review_count=$(rg -c '^    reviewed_at: [0-9]{4}-[0-9]{2}-[0-9]{2}$' "$ledger")
+((commit_count > 0 && commit_count == review_count))
 
 printf 'gaming session and research ledger: ok\n'

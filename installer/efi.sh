@@ -11,13 +11,15 @@ label_for_slot() {
 boot_number_for_label() {
 	local label=$1
 	efibootmgr | awk -v wanted="$label" '
+		BEGIN { found = 0 }
         /^Boot[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]/ {
+			if (found) next
             number = substr($0, 5, 4)
             rest = substr($0, 9)
             sub(/^[*[:space:]]+/, "", rest)
             if (index(rest, wanted) == 1) {
                 print toupper(number)
-                exit
+				found = 1
             }
         }
     '
@@ -61,7 +63,11 @@ activate_slot() {
 		order+=("$active_number")
 	fi
 
-	current_order=$(efibootmgr | awk -F': ' '/^BootOrder:/ { print $2; exit }')
+	# Do not exit awk early here or in boot_number_for_label: with pipefail,
+	# efibootmgr can otherwise receive SIGPIPE and abort the installer (141).
+	current_order=$(efibootmgr | awk -F': ' '
+		/^BootOrder:/ && !found { print $2; found = 1 }
+	')
 	IFS=',' read -r -a existing_entries <<<"$current_order"
 	for entry in "${existing_entries[@]}"; do
 		[[ -n $entry && $entry != "$target_number" && $entry != "${active_number:-}" ]] && order+=("$entry")

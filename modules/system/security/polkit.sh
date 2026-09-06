@@ -5,6 +5,7 @@ set -Eeuo pipefail
 source "$SETUP_ROOT/lib/module.sh"
 
 packages=(
-    polkit
+	polkit
 )
-pkg_install "${packages[@]}"
+
+module_entrypoint "$@"

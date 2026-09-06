@@ -12,4 +12,4 @@ packages=(
 	fedora:adwaita-fonts-all
 )
 
-pkg_install "${packages[@]}"
+module_entrypoint "$@"

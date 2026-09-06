@@ -1,0 +1,18 @@
+# shellcheck shell=bash disable=SC2034,SC2154
+pkgname=mpv-sosc
+pkgver=20231209
+pkgrel=1
+pkgdesc='Seasonal OSC script for mpv'
+arch=('any')
+url='https://github.com/christoph-heinrich/sosc'
+license=('GPL-2.0-only')
+depends=('mpv')
+_commit=5491dbdd9286d3a6da4bb6976d914a7f82dc0727
+source=("$pkgname-$_commit.tar.gz::$url/archive/$_commit.tar.gz")
+sha256sums=('986857997e1739960b35a6c8161b6ce2b6f221ee341e95e1948c39a32821533e')
+
+package() {
+	cd "sosc-$_commit" || return
+	install -Dm0644 osc.lua "$pkgdir/etc/mpv/scripts/osc.lua"
+	install -Dm0644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

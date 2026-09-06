@@ -7,12 +7,16 @@ source "$SETUP_ROOT/lib/module.sh"
 source "$SETUP_ROOT/lib/env.sh"
 source "$SETUP_ROOT/lib/repo-health.sh"
 
-repo_health https://github.com/sharkdp/bat -m 12
+module_healthcheck() {
+	repo_health https://github.com/sharkdp/bat -m 12
+}
 
 packages=(
 	bat
 )
 
-pkg_install "${packages[@]}"
+module_apply() {
+	shell_set_alias bat cat 'bat --paging=never'
+}
 
-shell_set_alias bat cat 'bat --paging=never'
+module_entrypoint "$@"

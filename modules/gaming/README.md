@@ -20,7 +20,7 @@ own audio. Nothing forces maximum performance during ordinary desktop use.
 - original Steam Controller, ordinary gamepads, and a Steam Deck used as a
   separate Steam/Remote Play device
 
-The DMI guard in `modules/hardware/devices/zephyrus.sh` keeps ASUS policy off
+The DMI guard in `modules/hardware/devices/zephyrus/module.sh` keeps ASUS policy off
 other machines. The GA402-specific GPU preference is conditional at runtime:
 when firmware has disabled the RX 6800S, Gamescope chooses an available GPU
 instead of failing.
@@ -46,15 +46,15 @@ controlled GA402 observation rather than a copied Steam Deck or RyzenAdj value.
 | Concern | Owner | Repository implementation |
 | --- | --- | --- |
 | Games and compatibility | native Steam, Steam Linux Runtime, Proton | `steam.sh`, one Proton manager (`ProtonPlus`), Protontricks |
-| Dedicated shell | Gamescope launching Steam Gamepad UI | `gamescope-session.sh`, `system-gaming-session` |
+| Dedicated shell | Gamescope launching Steam Gamepad UI | `gamescope-session/module.sh`, its `files/` overlay |
 | Overlay | Gamescope Mangoapp in gaming mode; MangoHud on explicit desktop use | `mangohud.sh` |
 | Graphics | distro Mesa/RADV and 32-bit Vulkan userspace | `hardware/gpu/amdgpu.sh` |
-| Platform power/thermals | `asusd`, kernel `asus-armoury`, ASUS firmware | `hardware/devices/zephyrus.sh` |
+| Platform power/thermals | `asusd`, kernel `asus-armoury`, ASUS firmware | `hardware/devices/zephyrus/module.sh` |
 | Hardware diagnosis | read-only sysfs, ASUS, DRM, battery, and process sampling | `system-g14-observe` |
-| Per-application GPU choice | `switcheroo-control` plus ASUS firmware GPU mode | `hardware/devices/zephyrus.sh` |
+| Per-application GPU choice | `switcheroo-control` plus ASUS firmware GPU mode | `hardware/devices/zephyrus/module.sh` |
 | Controllers | kernel HID drivers, Valve udev rules, Steam Input | `steam.sh` |
 | Audio | PipeWire and WirePlumber | existing audio module; no gaming override |
-| Memory pressure | `zram-generator` defaults | `system/memory/zram.sh` |
+| Memory pressure | `zram-generator` defaults | `hardware/memory/zram.sh` |
 | Login/session selection | Plasma Login Manager | ordinary Wayland session desktop file |
 
 The gaming-session process tree is deliberately simple:

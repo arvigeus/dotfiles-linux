@@ -8,9 +8,11 @@ source "$SETUP_ROOT/lib/env.sh"
 
 packages=(lsd)
 
-pkg_install "${packages[@]}"
+module_apply() {
+	shell_set_alias lsd ls "lsd --almost-all --group-dirs first --header --blocks name,size,permission,date --permission octal --date relative"
+}
 
-shell_set_alias lsd ls "lsd --almost-all --group-dirs first --header --blocks name,size,permission,date --permission octal --date relative"
+module_entrypoint "$@"
 
 # Options:
 #       --tree                         Recurse into directories and present the result as a tree

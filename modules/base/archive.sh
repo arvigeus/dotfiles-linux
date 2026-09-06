@@ -11,4 +11,4 @@ packages=(
 	7zip
 )
 
-pkg_install "${packages[@]}"
+module_entrypoint "$@"

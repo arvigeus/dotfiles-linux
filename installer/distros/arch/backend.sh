@@ -42,12 +42,13 @@ distro_install_base_system() {
 	fi
 
 	log "Installing a clean Arch base"
-	pacstrap -K "$TARGET_ROOT" "${packages[@]}"
+	timeout --foreground --signal=INT --kill-after=30s 7200 \
+		pacstrap -K "$TARGET_ROOT" "${packages[@]}"
 }
 
 distro_configure_base_system() {
 	sed -i "s/^#${LOCALE//./\\.} UTF-8/${LOCALE} UTF-8/" "$TARGET_ROOT/etc/locale.gen"
-	target_chroot locale-gen
+	target_chroot timeout --foreground --signal=INT --kill-after=30s 300 locale-gen
 }
 
 distro_generate_uki() {
@@ -83,7 +84,8 @@ PRESETS=('default')
 default_uki="$output"
 EOF
 
-	target_chroot mkinitcpio -p "$PROJECT_ID"
+	target_chroot timeout --foreground --signal=INT --kill-after=30s 1800 \
+		mkinitcpio -p "$PROJECT_ID"
 
 	# Initial generation targets an atomic temporary path. Future native kernel
 	# transactions must write the active slot's permanent UKI, so retain that

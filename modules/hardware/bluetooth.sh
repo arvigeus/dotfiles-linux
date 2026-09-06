@@ -9,7 +9,10 @@ packages=(
 	arch:bluez-utils
 )
 
-pkg_install "${packages[@]}"
-systemctl enable bluetooth.service
+module_apply() {
+	systemctl enable bluetooth.service
 
-preserve_path /var/lib/bluetooth
+	preserve_path /var/lib/bluetooth
+}
+
+module_entrypoint "$@"

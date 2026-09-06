@@ -9,5 +9,9 @@ source "$SETUP_ROOT/lib/flatpak.sh"
 packages=(
 	flathub/org.diasurgical.DevilutionX
 )
-pkg_install "${packages[@]}"
-flatpak_alias diablo org.diasurgical.DevilutionX
+module_apply() {
+	flatpak_alias diablo org.diasurgical.DevilutionX
+
+}
+
+module_entrypoint "$@"

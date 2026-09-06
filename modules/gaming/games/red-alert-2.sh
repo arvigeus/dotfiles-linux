@@ -6,9 +6,14 @@ set -Eeuo pipefail
 source "$SETUP_ROOT/lib/module.sh"
 source "$SETUP_ROOT/lib/webapp.sh"
 
-pkg_install chromium
-webapp_install \
-	'Chrono Divide' \
-	https://game.chronodivide.com/ \
-	red-alert-2 \
-	'Game;StrategyGame;'
+packages=(chromium)
+
+module_apply() {
+	webapp_install \
+		'Chrono Divide' \
+		https://game.chronodivide.com/ \
+		red-alert-2 \
+		'Game;StrategyGame;'
+}
+
+module_entrypoint "$@"

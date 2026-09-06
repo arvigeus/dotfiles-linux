@@ -5,11 +5,11 @@ set -Eeuo pipefail
 source "$SETUP_ROOT/lib/module.sh"
 
 packages=(
-    pipewire
+	pipewire
 	wireplumber
 	pipewire-alsa
 	arch:pipewire-pulse
 	fedora:pipewire-pulseaudio
 )
 
-pkg_install "${packages[@]}"
+module_entrypoint "$@"
