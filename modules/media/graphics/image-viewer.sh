@@ -4,6 +4,6 @@ set -Eeuo pipefail
 
 source "$SETUP_ROOT/lib/module.sh"
 
-packages=(gwenview)
+packages=(koko)
 
 module_entrypoint "$@"

@@ -23,6 +23,8 @@ packages=(
 	plasma-login-manager
 	fedora:kcm-plasmalogin
 
+    plasma-bigscreen
+
 	# Plasma and Flatpak integration
 	plasma-browser-integration
 	flatpak-kcm

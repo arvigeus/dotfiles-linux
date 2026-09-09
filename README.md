@@ -4,9 +4,6 @@ A Bash-managed Arch Linux or Fedora system with two mutable Btrfs root
 subvolumes, persistent home, LUKS2 encryption, and direct UEFI unified kernel
 images.
 
-This is an experimental personal installer, not a production-ready general
-installer. Test it in a disposable VM before pointing it at real hardware.
-
 ## Model
 
 ```text
@@ -20,8 +17,8 @@ LUKS2
     └── @home         persistent home
 ```
 
-Bootstrap from an Arch ISO to install Arch, or from a Fedora ISO to install
-Fedora. Both slots always remain that distribution.
+Bootstrap from the target distribution’s installation media. Each slot remains
+associated with the distribution installed into it.
 
 The active slot is an ordinary mutable Linux system: update it, install things
 manually, and accept drift whenever useful. `rebuild.sh` provides the clean
@@ -50,9 +47,8 @@ cd system
 ./bootstrap.sh
 ```
 
-The script detects Arch or Fedora and interactively asks for the target disk,
-hostname, username, timezone, locale, and keymap. It displays the disk again and
-requires exact destructive confirmation unless `--yes` was explicitly passed.
+The script detects the distribution and interactively asks for the target disk,
+hostname, username, timezone, locale, and keymap.
 It also prompts for LUKS and login passwords through the native tools.
 
 No installer `.env` is used. Non-secret installation answers are retained at
