@@ -54,6 +54,9 @@ packages=(
 	fedora:rpmspec/plasma6-applets-overview-widget
 	arch:aur/plasma6-applets-wallhaven-reborn-git
 	fedora:rpmspec/plasma6-applets-wallhaven-reborn
+
+    # image viewer
+	koko
 )
 
 module_apply() {
@@ -106,7 +109,7 @@ module_apply() {
 	kde_default kdeglobals KDE DefaultDarkLookAndFeel org.kde.breezedark.desktop
 
 	for config in \
-		kdeglobals dolphinrc ksmserverrc kwinrc ksplashrc kxkbrc kwalletrc; do
+		kdeglobals dolphinrc ksmserverrc kwinrc ksplashrc kscreenlockerrc kxkbrc kwalletrc; do
 		home_strategy ".config/$config" ini unchanged
 	done
 

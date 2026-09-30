@@ -17,6 +17,10 @@ source "$SETUP_ROOT/lib/env.sh"
 # Drop duplicate consecutive lines from history.
 module_apply() {
 	shell_set_env bash HISTCONTROL ignoredups
+	# Keep history out of $HOME root, in the XDG state location.
+	install -d -m 0755 "$HOME/.local/state/bash"
+	# shellcheck disable=SC2016
+	shell_set_env bash HISTFILE '$HOME/.local/state/bash/history'
 }
 
 module_entrypoint "$@"

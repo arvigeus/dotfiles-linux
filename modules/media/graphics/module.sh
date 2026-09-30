@@ -3,6 +3,6 @@ set -Eeuo pipefail
 
 source "$SETUP_ROOT/lib/module.sh"
 
-members=(gimp image-viewer photopea)
+members=(gimp photopea)
 
 module_entrypoint "$@"
