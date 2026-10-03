@@ -29,6 +29,7 @@ _run_module() {
 			MODULE_ID="$module_id" \
 			MODULE_PHASE="$phase" \
 			MODULE_PLAN_FILE="$plan_file" \
+			DESKTOP="${DESKTOP:-plasma}" HOST_PROFILE="${HOST_PROFILE:-$HOSTNAME}" \
 			USERNAME="$USERNAME" USER_UID="$USER_UID" USER_GID="$USER_GID" \
 			DISTRO="$DISTRO" PACKAGE_MANAGER="$PACKAGE_MANAGER" PROJECT_ID="$PROJECT_ID" \
 			PRESERVE_REQUESTS_FILE="$preserve_requests" \
@@ -49,6 +50,7 @@ _run_module() {
 		MODULE_ID="$module_id" \
 		MODULE_PHASE="$phase" \
 		MODULE_PLAN_FILE="$plan_file" \
+		DESKTOP="${DESKTOP:-plasma}" HOST_PROFILE="${HOST_PROFILE:-$HOSTNAME}" \
 		USERNAME="$USERNAME" \
 		USER_UID="$USER_UID" \
 		USER_GID="$USER_GID" \
@@ -88,7 +90,7 @@ _module_resolve_path() {
 }
 
 _load_host_modules() {
-	local host="$PROJECT_ROOT/hosts/$HOSTNAME.sh"
+	local host="$PROJECT_ROOT/hosts/${HOST_PROFILE:-$HOSTNAME}.sh"
 	[[ -f $host && ! -L $host ]] || die "Host definition not found: $host"
 	local output
 	if [[ ${MODULE_PREFLIGHT:-false} == true ]]; then
@@ -249,13 +251,13 @@ preflight_modules() (
 	SELECTED_MODULE_DIRS=()
 	_load_host_modules
 
-	log "Preflighting host module graph: $HOSTNAME"
+	log "Preflighting profile: ${HOST_PROFILE:-$HOSTNAME} (desktop ${DESKTOP:-plasma})"
 	local selector
 	for selector in "${HOST_MODULES[@]}"; do
-		_resolve_module "$selector"
+		_resolve_module "$selector" || exit 1
 	done
 	((${#SELECTED_MODULE_IDS[@]} > 0)) || die "Host $HOSTNAME resolved to no applicable modules"
-	_pkg_validate_plan "$PACKAGE_PLAN"
+	_pkg_validate_plan "$PACKAGE_PLAN" || exit 1
 	log "Preflight passed: ${#SELECTED_MODULE_IDS[@]} applicable leaf modules"
 )
 
@@ -272,12 +274,17 @@ _prepare_module_packages() {
 		destination="$target_recipes/$module_id"
 		mkdir -p "$destination"
 		cp -a -- "$module_dir/packages/." "$destination/"
+		_module_checkpoint recipes "$module_id"
 		log "Resolving local package recipes for $module_id"
 		target_chroot /usr/bin/env \
 			GITHUB_TOKEN="${GITHUB_TOKEN:-}" \
 			timeout --foreground --signal=INT --kill-after=30s 900 \
 			bash "/run/$PROJECT_ID/packages/update.sh" \
-			"/run/$PROJECT_ID-package-recipes/$module_id" "$DISTRO"
+			"/run/$PROJECT_ID-package-recipes/$module_id" "$DISTRO" \
+			2>&1 | tee "$TARGET_ROOT/var/log/$PROJECT_ID/recipe-${module_id//\//_}.log"
+		local metadata_dir="$TARGET_ROOT/var/log/$PROJECT_ID/package-recipes/$module_id"
+		mkdir -p "$metadata_dir"
+		(cd "$destination" && find . -type f \( -name PKGBUILD -o -name '*.spec' -o -name sources.sha256 \) -exec cp --parents -- {} "$metadata_dir/" \;)
 	done
 }
 
@@ -290,7 +297,8 @@ _apply_package_plan() {
 		PACKAGE_MANAGER="$PACKAGE_MANAGER" \
 		PROJECT_ID="$PROJECT_ID" \
 		timeout --foreground --signal=INT --kill-after=30s 7200 \
-		bash "/run/$PROJECT_ID/installer/apply-package-plan.sh" "$PACKAGE_PLAN"
+		bash "/run/$PROJECT_ID/installer/apply-package-plan.sh" "$PACKAGE_PLAN" \
+		2>&1 | tee "$TARGET_ROOT/var/log/$PROJECT_ID/packages.log"
 }
 
 run_modules() {
@@ -312,7 +320,7 @@ run_modules() {
 	: >"$TARGET_ROOT$PACKAGE_PLAN"
 	_load_host_modules
 
-	log "Planning host: $HOSTNAME"
+	log "Planning profile: ${HOST_PROFILE:-$HOSTNAME} (desktop ${DESKTOP:-plasma})"
 	_module_checkpoint planning "$HOSTNAME"
 	local selector
 	for selector in "${HOST_MODULES[@]}"; do
@@ -336,7 +344,8 @@ run_modules() {
 			"${SELECTED_MODULE_FILES[$index]}" \
 			"${SELECTED_MODULE_IDS[$index]}" \
 			"/run/$PROJECT_ID-module-plan.tsv" \
-			"$PRESERVE_REQUESTS"
+			"$PRESERVE_REQUESTS" \
+			2>&1 | tee "$TARGET_ROOT/var/log/$PROJECT_ID/module-${SELECTED_MODULE_IDS[$index]//\//_}.log"
 	done
 
 	if [[ ${RUN_MODULE_HEALTHCHECKS:-false} == true ]]; then

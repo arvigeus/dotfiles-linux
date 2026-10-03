@@ -5,6 +5,7 @@ set -Eeuo pipefail
 
 source "$SETUP_ROOT/lib/module.sh"
 source "$SETUP_ROOT/lib/repo-health.sh"
+source "$SETUP_ROOT/lib/hardware.sh"
 
 module_healthcheck() {
 	repo_health https://github.com/tomasklaen/uosc -m 12
@@ -28,6 +29,16 @@ packages=(
 )
 
 module_apply() {
+	# Physical GA402RK comparisons found VA-API/OpenGL substantially cheaper
+	# than Vulkan Video for the tested H.264 playback. Keep driver/codec discovery
+	# automatic; this is a native mpv option, not a power-management hook.
+	if dmi_matches ga402rk; then
+		file_append "${MPV_CONF_DIR}/mpv.conf" <<'EOF'
+# GA402RK physical playback validation: docs/g14-study-2026-10-01.md
+gpu-api=opengl
+
+EOF
+	fi
 	# Package-owned shader and plugin payloads provide pack-next.json before this
 	# configuration phase begins.
 	[[ -f $PACK_JSON ]] || {
@@ -78,6 +89,18 @@ EOF
 [fsr-cas]
 glsl-shaders=${SHADERS_DIR}/FSR.glsl
 glsl-shaders-append=${SHADERS_DIR}/CAS-scaled.glsl
+EOF
+
+	# The owner selected generic-high as the default; preserve all other profiles.
+	jq -e '.profiles | has("generic-high")' "$PACK_JSON" >/dev/null || {
+		printf 'Shader pack is missing the requested generic-high profile.\n' >&2
+		return 1
+	}
+	file_append "${MPV_CONF_DIR}/mpv.conf" <<'EOF'
+
+[default]
+profile=generic-high
+
 EOF
 
 	# Generate input.conf menu entries for profiles without manual keybindings

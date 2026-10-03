@@ -11,15 +11,8 @@ module_check() {
 }
 
 packages=(
-	# The base system already supplies linux-firmware. These additional firmware
-	# blobs came from the prior GA402 setup; Fedora equivalents are intentionally
-	# not guessed.
-	arch:linux-firmware-qlogic
-	arch:aur/aic94xx-firmware
-	arch:aur/ast-firmware
-	arch:aur/upd72020x-fw
-	arch:aur/wd719x-firmware
-
+	# Distribution linux-firmware supplies the AMD/Wi-Fi firmware. Unrelated
+	# legacy SCSI, server graphics and USB-controller firmware is not required.
 	arch:ogc/asusctl
 	fedora:terra/asusctl
 
@@ -30,6 +23,13 @@ packages=(
 	fedora:switcheroo-control
 )
 module_apply() {
+	# Native ASUS settings (including ROG Control Center changes) survive rebuilds.
+	preserve_path /etc/asusd
+	if dmi_matches ga402rk; then
+		# Upstream defaults to Performance on AC. Use the physically observed
+		# Balanced baseline until a sustained gaming envelope has been measured.
+		file_write /etc/asusd/asusd.ron <"$MODULE_DIR/default-asusd.ron"
+	fi
 
 	# asusd is the sole platform-profile and CPU-EPP owner. ASUS upstream warns
 	# that PPD or tuned running at the same time races on those same interfaces;

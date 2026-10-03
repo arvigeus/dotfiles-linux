@@ -46,9 +46,10 @@ EOF
 pacman_repo_write ogc chaotic-aur <<'EOF'
 Server = https://pacman.opengamingcollective.org
 EOF
-if pacman_repo_write ogc chaotic-aur <<'EOF'; then
+if pacman_repo_write ogc chaotic-aur <<'EOF'
 Server = https://pacman.opengamingcollective.org
 EOF
+then
 	printf 'unchanged Pacman repository was rewritten\n' >&2
 	exit 1
 fi
@@ -65,6 +66,19 @@ for repositories in \
 	((${first_line%%:*} < ${second_line%%:*}))
 done
 unset PACMAN_CONFIG
+
+# A booted Arch root must contain its own rebuild tool; live-ISO availability
+# alone is insufficient. Capture the backend's real base-install invocation.
+(
+	source "$PROJECT_ROOT/installer/distros/arch/backend.sh"
+	KERNEL_PACKAGE=linux MICROCODE_PACKAGE=amd-ucode TARGET_ROOT="$TEST_ROOT/root"
+	log() { :; }
+	unshare() { printf '%s\n' "$@" >"$TEST_ROOT/base-install-arguments"; }
+	distro_install_base_system
+)
+rg -qx 'arch-install-scripts' "$TEST_ROOT/base-install-arguments"
+rg -qx -- '--pid' "$TEST_ROOT/base-install-arguments"
+rg -qx 'pacstrap' "$TEST_ROOT/base-install-arguments"
 
 EXTRA_PACKAGES=()
 pkg_native_install() {

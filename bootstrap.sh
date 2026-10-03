@@ -14,13 +14,7 @@ source "$PROJECT_ROOT/installer/home.sh"
 
 ASSUME_YES=false
 RUN_MODULE_HEALTHCHECKS=false
-for argument in "$@"; do
-	case $argument in
-	--yes) ASSUME_YES=true ;;
-	--healthchecks) RUN_MODULE_HEALTHCHECKS=true ;;
-	*) die "Unknown bootstrap option: $argument" ;;
-	esac
-done
+bootstrap_options "$@"
 
 cleanup() {
 	local status=$?

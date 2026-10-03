@@ -2,22 +2,22 @@
   "extensions": [
     {
       "name":     "Bitwarden",
-      "firefox":  "https://addons.mozilla.org/firefox/downloads/file/4410896/bitwarden_password_manager-latest.xpi",
+      "firefox":  "https://addons.mozilla.org/firefox/downloads/latest/bitwarden-password-manager/latest.xpi",
       "chromium": "https://chromewebstore.google.com/detail/bitwarden-password-manage/nngceckbapebfimnlniiiahkandclblb"
     },
     {
       "name":     "uBlock Origin",
-      "firefox":  "https://addons.mozilla.org/firefox/downloads/file/4492375/ublock_origin-latest.xpi",
+      "firefox":  "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi",
       "chromium": "https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh"
       // `Settings -> Filter lists` and enable `Annoyances`, `Cookie Notices` and etc. Press `Update now`, then `Apply Changes`.
     },
     {
       "name":     "Multi-Account Containers",
-      "firefox":  "https://addons.mozilla.org/firefox/downloads/file/4494279/multi_account_containers-latest.xpi"
+      "firefox":  "https://addons.mozilla.org/firefox/downloads/latest/multi-account-containers/latest.xpi"
     },
     {
       "name":                 "Export Cookies",
-      "firefox":              "https://addons.mozilla.org/firefox/downloads/file/3403419/export_cookies_txt-latest.xpi",
+      "firefox":              "https://addons.mozilla.org/firefox/downloads/latest/export-cookies-txt/latest.xpi",
       "firefox_id_fallback":  "{36bdf805-c6f2-4f41-94d2-9b646342c1dc}",
       "chromium":             "https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc"
     },
@@ -27,47 +27,47 @@
     },
     {
       "name":     "Plasma Integration",
-      "firefox":  "https://addons.mozilla.org/firefox/downloads/file/4298512/plasma_integration-latest.xpi",
+      "firefox":  "https://addons.mozilla.org/firefox/downloads/latest/plasma-integration/latest.xpi",
       "chromium": "https://chromewebstore.google.com/detail/plasma-integration/cimiefiiaegbelhefglklhhakcgmhkai"
     },
     {
       "name":     "React Dev Tools",
-      "firefox":  "https://addons.mozilla.org/firefox/downloads/file/4360002/react_devtools-latest.xpi",
+      "firefox":  "https://addons.mozilla.org/firefox/downloads/latest/react-devtools/latest.xpi",
       "chromium": "https://chromewebstore.google.com/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi"
     },
     {
       "name":     "Wappalyzer",
-      "firefox":  "https://addons.mozilla.org/firefox/downloads/file/4482384/wappalyzer-latest.xpi",
+      "firefox":  "https://addons.mozilla.org/firefox/downloads/latest/wappalyzer/latest.xpi",
       "chromium": "https://chromewebstore.google.com/detail/wappalyzer-technology-pro/gppongmhjkpfnbhagpmjfkannfbllamg"
     },
     {
       "name":     "Web Developer",
-      "firefox":  "https://addons.mozilla.org/firefox/downloads/file/4306323/web_developer-latest.xpi",
+      "firefox":  "https://addons.mozilla.org/firefox/downloads/latest/web-developer/latest.xpi",
       "chromium": "https://chromewebstore.google.com/detail/web-developer-tool-for-ch/ghenifimhcdihapkceohjpgiabidpgji"
     },
     {
       "name":     "WebHint",
-      "firefox":  "https://addons.mozilla.org/firefox/downloads/file/4344764/webhint-latest.xpi",
+      "firefox":  "https://addons.mozilla.org/firefox/downloads/latest/webhint/latest.xpi",
       "chromium": "https://chromewebstore.google.com/detail/webhint/gccemnpihkbgkdmoogenkbkckppadcag"
     },
     {
       "name":     "SponsorBlock",
-      "firefox":  "https://addons.mozilla.org/firefox/downloads/file/4480833/sponsorblock-latest.xpi",
+      "firefox":  "https://addons.mozilla.org/firefox/downloads/latest/sponsorblock/latest.xpi",
       "chromium": "https://chromewebstore.google.com/detail/sponsorblock-for-youtube/mnjggcdmjocbbbhaepdhchncahnbgone"
     },
     {
       "name":     "Language Tool",
-      "firefox":  "https://addons.mozilla.org/firefox/downloads/file/4470413/languagetool-latest.xpi",
+      "firefox":  "https://addons.mozilla.org/firefox/downloads/latest/languagetool/latest.xpi",
       "chromium": "https://chromewebstore.google.com/detail/ai-grammar-checker-paraph/oldceeleldhonbafppcapldpdifcinji"
     },
     {
       "name":     "The Camelizer",
-      "firefox":  "https://addons.mozilla.org/firefox/downloads/file/4075638/the_camelizer_price_history_ch-latest.xpi",
+      "firefox":  "https://addons.mozilla.org/firefox/downloads/latest/the-camelizer-price-history-ch/latest.xpi",
       "chromium": "https://chromewebstore.google.com/detail/the-camelizer/ghnomdcacenbmilgjigehppbamfndblo"
     },
     {
       "name":     "Unhook",
-      "firefox":  "https://addons.mozilla.org/firefox/downloads/file/4733035/youtube_recommended_videos-latest.xpi",
+      "firefox":  "https://addons.mozilla.org/firefox/downloads/latest/youtube-recommended-videos/latest.xpi",
       "chromium": "https://chromewebstore.google.com/detail/unhook-remove-youtube-rec/khncfooichmfjbepaaaebmommgaepoid"
     }
   ],

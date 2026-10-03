@@ -75,3 +75,21 @@ qemu_cpu() {
 		printf 'max\n'
 	fi
 }
+
+VM_LOG_DIR=$(absolute_path "${VM_LOG_DIR:-vm/logs}")
+mkdir -p "$VM_LOG_DIR"
+VM_QEMU_ARGS=(-vga virtio -serial "file:$VM_LOG_DIR/$HOSTNAME-serial.log")
+if [[ ${VM_HEADLESS:-false} == true ]]; then
+	VM_QEMU_ARGS+=(-display none)
+fi
+if [[ -n ${VM_QMP_SOCKET:-} ]]; then
+	VM_QEMU_ARGS+=(-qmp "unix:$(absolute_path "$VM_QMP_SOCKET"),server=on,wait=off")
+fi
+VM_NETWORK=user,model=virtio-net-pci
+if [[ -n ${VM_SSH_PORT:-} ]]; then
+	[[ $VM_SSH_PORT =~ ^[0-9]+$ ]] && ((VM_SSH_PORT > 1024 && VM_SSH_PORT < 65536)) || {
+		printf 'VM_SSH_PORT must be between 1025 and 65535\n' >&2
+		exit 1
+	}
+	VM_NETWORK+=",hostfwd=tcp:127.0.0.1:$VM_SSH_PORT-:22"
+fi

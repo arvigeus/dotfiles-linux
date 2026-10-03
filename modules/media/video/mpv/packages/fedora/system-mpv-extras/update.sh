@@ -9,11 +9,11 @@ thumbfast_commit=$HEAD_COMMIT
 thumbfast_date=$HEAD_DATE
 thumbfast_hash=$(hash_url "https://github.com/po5/thumbfast/archive/$thumbfast_commit.tar.gz")
 
-head_commit_resolve christoph-heinrich/sosc
+release_commit_resolve christoph-heinrich/sosc
 sosc_commit=$HEAD_COMMIT
 sosc_hash=$(hash_url "https://github.com/christoph-heinrich/sosc/archive/$sosc_commit.tar.gz")
 
-version="$shader_version.$thumbfast_date"
+version="$shader_version.$thumbfast_date.$RELEASE_VERSION"
 spec="$RECIPE_DIR/system-mpv-extras.spec"
 replace_line "$spec" '^%global shader_tag ' "%global shader_tag $shader_tag"
 replace_line "$spec" '^%global thumbfast_commit ' "%global thumbfast_commit $thumbfast_commit"

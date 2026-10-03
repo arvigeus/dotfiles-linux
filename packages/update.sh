@@ -77,11 +77,31 @@ release_resolve() {
 	local repository=${1:?GitHub repository required}
 	local response
 	response=$(github_api "/repos/$repository/releases/latest")
+	jq -e '.draft == false and .prerelease == false' <<<"$response" >/dev/null || {
+		printf 'Upstream did not return a stable release for %s\n' "$repository" >&2
+		exit 1
+	}
 	RELEASE_TAG=$(jq -er '.tag_name' <<<"$response")
 	validate_tag "$RELEASE_TAG"
 	RELEASE_VERSION=${RELEASE_TAG#v}
 	RELEASE_VERSION=${RELEASE_VERSION#V}
 	validate_version "$RELEASE_VERSION"
+}
+
+release_commit_resolve() {
+	local repository=${1:?GitHub repository required}
+	local commit_json timestamp
+	release_resolve "$repository"
+	commit_json=$(github_api "/repos/$repository/commits/$RELEASE_TAG")
+	HEAD_COMMIT=$(jq -er '.sha' <<<"$commit_json")
+	validate_commit "$HEAD_COMMIT"
+	timestamp=$(jq -er '.commit.author.date' <<<"$commit_json")
+	[[ $timestamp =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T ]] || {
+		printf 'Unsafe release commit timestamp for %s: %s\n' "$repository" "$timestamp" >&2
+		exit 1
+	}
+	HEAD_DATE=${timestamp%%T*}
+	HEAD_DATE=${HEAD_DATE//-/}
 }
 
 head_resolve() {

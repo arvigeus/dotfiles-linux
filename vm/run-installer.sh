@@ -27,5 +27,6 @@ exec qemu-system-x86_64 \
 	-drive "if=virtio,format=qcow2,file=$VM_DISK" \
 	-cdrom "$SOURCE_ISO" \
 	-boot order=d,menu=on \
-	-nic user,model=virtio-net-pci \
+	-nic "$VM_NETWORK" \
+	"${VM_QEMU_ARGS[@]}" \
 	-virtfs "local,path=$PROJECT_ROOT,mount_tag=setup,security_model=none,readonly=on"

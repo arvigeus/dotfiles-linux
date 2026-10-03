@@ -36,6 +36,11 @@ module_entrypoint "$@"
 check is evaluated during planning and immediately before application; a
 changed result is fatal. Aggregate modules may declare only `members`.
 
+`HOST_PROFILE` and `DESKTOP` are explicit installed-system inputs passed to
+plan, apply and healthcheck processes. Desktop aggregates select their matching
+implementation. Common media includes Kodi, which skips Hyprland through a
+simple `module_check`; its `requires` edge owns the mpv dependency.
+
 Each selected leaf is evaluated in an isolated Bash process. The phases are:
 
 1. Expand explicit host selections, aggregates, and requirements.

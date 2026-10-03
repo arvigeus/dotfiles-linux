@@ -48,7 +48,9 @@ cd system
 ```
 
 The script detects the distribution and interactively asks for the target disk,
-hostname, username, timezone, locale, and keymap.
+host profile, desktop, hostname, username, timezone, locale, and keymap.
+Disk/profile/desktop use numbered menus; other answers have sensible defaults.
+See [desktop profiles](docs/desktops.md) for CLI/environment overrides.
 It also prompts for LUKS and login passwords through the native tools.
 
 No installer `.env` is used. Non-secret installation answers are retained at
@@ -77,7 +79,7 @@ available while testing.
 
 ## Modules
 
-`hosts/<hostname>.sh` explicitly selects modules. Aggregate modules contain an
+`hosts/<HOST_PROFILE>.sh` explicitly selects modules. Aggregate modules contain an
 ordered `members` array; selecting `gaming` expands its declared children,
 while selecting `gaming/steam` installs only Steam. Filesystem discovery is not
 part of execution.
@@ -127,7 +129,12 @@ for example `base/package-sources` declares `sources=(arch:alhp)`.
 Local package recipes are used only when an enabled repository or the AUR does
 not already carry the package. They live beside their owning module under
 `packages/<distro>/<name>/`. Only recipes belonging to selected modules are
-copied and resolved. See [the module contract](modules/README.md) and
+copied and resolved automatically before package installation on both
+`bootstrap.sh` and `rebuild.sh`. Every applicable `update.sh` runs against a
+temporary copy; release-based recipes resolve the latest stable release and
+reject drafts/prereleases. Resolution failures stop provisioning instead of
+using the tracked snapshot. See [recipe maintenance](packages/README.md),
+[the module contract](modules/README.md) and
 [the design document](docs/design.md) for the exact rules.
 
 ## File declarations
@@ -183,13 +190,25 @@ poweroff
 Then start the installed disk with `./vm/run.sh`. Keep separate VM disks and
 OVMF variable files when testing Arch and Fedora.
 
-The QEMU helpers are currently interactive. A successful shell test run is not
+The QEMU helpers support optional headless mode, localhost SSH forwarding,
+QMP and retained serial logs; see [VM validation](docs/vm-validation.md). A successful shell test run is not
 a substitute for completing bootstrap, boot, rebuild, and second boot in both
 an Arch guest and a Fedora guest.
 
 Fedora-specific backend assumptions and validation points are documented in
 [docs/fedora.md](docs/fedora.md). Gaming-session details are in
 [modules/gaming/README.md](modules/gaming/README.md).
+
+## Desktop and private configuration
+
+Plasma supports Arch and Fedora. Zephyrus Hyprland currently supports Arch,
+with its public source packaged under `/usr/share/zephyrus-shell`. Desktop
+selection persists across rebuilds; `rebuild.sh --desktop hyprland` switches the
+candidate. See [profiles and Python tooling](docs/desktops.md).
+
+Private configuration is optional and separate from installation. After login,
+use the authenticated fetch/reviewed apply hook described in
+[private hydration](docs/private-hydration.md).
 
 ## Current limits
 

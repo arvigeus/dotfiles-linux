@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-## Python interpreter, pip, and uv package/project manager
+## Python development with uv, Ruff and ty; pip for compatibility
 ## https://www.python.org/ https://docs.astral.sh/uv/
 set -Eeuo pipefail
 
@@ -12,6 +12,8 @@ packages=(
 	arch:python-pip
 	fedora:python3-pip
 	uv
+	ruff
+	ty
 )
 
 module_apply() {
@@ -24,6 +26,17 @@ module_apply() {
 	shell_set_env python PYTHONHISTORY '$HOME/.local/state/python/history'
 	# shellcheck disable=SC2016
 	shell_set_env python PIP_CACHE_DIR '$HOME/.cache/pip'
+}
+
+module_healthcheck() {
+	local command
+	for command in python3 uv ruff ty; do
+		command -v "$command" >/dev/null || {
+			printf 'Python development command missing: %s\n' "$command" >&2
+			return 1
+		}
+	done
+	python3 -m pip --version >/dev/null
 }
 
 module_entrypoint "$@"

@@ -1,5 +1,7 @@
 schema: 1
 reviewed_at: 2026-08-25
+physical_review_at: 2026-10-01
+physical_record: docs/g14-study-2026-10-01.md
 hardware_scope:
   system: ASUS ROG Zephyrus G14 GA402RK-L8149
   cpu: AMD Ryzen 9 6900HS
@@ -167,9 +169,9 @@ sources:
   asusctl:
     repository: https://github.com/OpenGamingCollective/asusctl
     branch: main
-    commit: 9d53a53c00c0bb955b73cc08156db1201b7905ad
-    commit_date: 2026-08-24T23:34:11+05:00
-    reviewed_at: 2026-08-25
+    commit: 28b456dec2969e293e0d8eae7a8face629ec4be2
+    commit_date: 2026-09-30T09:48:18Z
+    reviewed_at: 2026-10-01
     areas:
       - README.md
       - MANUAL.md
@@ -188,6 +190,32 @@ sources:
     rejected:
       - simultaneous power-profiles-daemon or tuned ownership
       - hard-coded fan curves or PPT values without hardware inspection
+    shell_controls:
+      - Manual boot-scoped CPUFreq boost toggle through a root-owned polkit helper; no tuning daemon or automatic boost policy
+      - Discovered per-app switcheroo-control GPU identities; no session-wide Mesa override
+      - User-selected generic-high mpv default retained; no automatic battery shader downgrade
+
+    physical_evidence:
+      date: 2026-10-01
+      bios: GA402RK.319
+      running_kernel: 7.1.4-1-g14
+      installed_asusctl: 6.5.0
+      observed:
+        - ASUS Balanced restored balance_power EPP after competing PPD removal
+        - RX 6800S suspended during all 24 samples of a 120-second idle record without Cardwire
+        - ppt_apu_sppt advertises 15..80 and ppt_platform_sppt advertises 30..115
+        - gpu_mux_mode is advertised; actual switching and reboot behavior remain untested
+        - battery full capacity 49.949 Wh versus 76 Wh design capacity
+        - Repeated 120-second H.264 OpenGL/VA-API playback used about 7 W reported APU PPT with dGPU suspended versus 17..18 W and dGPU active with Vulkan Video
+        - All four renderer comparison runs reported zero dropped frames
+        - Native GA402RK mpv OpenGL preference adopted; no battery-runtime claim
+        - Bounded 680M Phong trial stopped at CPU 82 C after 100.7 seconds; fans responded
+        - RX 6800S Phong trial completed 120 seconds with CPU peak 68.375 C and GPU junction peak 74 C; light workload only
+        - GA402RK native ASUS seed uses measured Balanced AC and Quiet DC baseline with linked EPP; no custom tuning groups
+      pending:
+        - Stock-kernel boot and suspend validation
+        - Unplugged movie workload and repeat measurements
+        - Representative gaming scene and conservative firmware-bound comparison
 
   cardwire:
     repository: https://github.com/OpenGamingCollective/cardwire

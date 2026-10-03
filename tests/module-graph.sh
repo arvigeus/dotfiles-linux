@@ -8,7 +8,9 @@ mkdir -p "$TEST_ROOT/root/run"
 
 TARGET_ROOT="$TEST_ROOT/root"
 PROJECT_ID=system
-HOSTNAME=zephyrus
+HOSTNAME=graph-test
+HOST_PROFILE=zephyrus
+DESKTOP=plasma
 DISTRO=arch
 PACKAGE_MANAGER=pacman
 USERNAME=tester
@@ -38,6 +40,7 @@ _run_module() {
 		MODULE_ID="$module_id" \
 		MODULE_PHASE="$phase" \
 		MODULE_PLAN_FILE="$TARGET_ROOT$plan_file" \
+		DESKTOP="$DESKTOP" HOST_PROFILE="$HOST_PROFILE" \
 		USERNAME="$USERNAME" USER_UID="$USER_UID" USER_GID="$USER_GID" \
 		DISTRO="$DISTRO" PACKAGE_MANAGER="$PACKAGE_MANAGER" PROJECT_ID="$PROJECT_ID" \
 		PRESERVE_REQUESTS_FILE="$TARGET_ROOT$PRESERVE_REQUESTS" \
@@ -79,6 +82,43 @@ _pkg_validate_plan "$validation_plan"
 unset SETUP_ROOT
 preflight_modules
 DISTRO=fedora PACKAGE_MANAGER=dnf preflight_modules
+
+# Both profiles resolve real modules, and the package plan explains ownership.
+rg -q $'media/video/kodi\t' "$TARGET_ROOT$PACKAGE_PLAN"
+rg -q $'desktop/plasma\t' "$TARGET_ROOT$PACKAGE_PLAN"
+if rg -q $'desktop/hyprland\t' "$TARGET_ROOT$PACKAGE_PLAN"; then
+	die 'Plasma selected Hyprland'
+fi
+MODULE_STATES=()
+MODULE_FILE_OWNERS=()
+SELECTED_MODULE_IDS=()
+SELECTED_MODULE_FILES=()
+SELECTED_MODULE_DIRS=()
+: >"$TARGET_ROOT$PACKAGE_PLAN"
+DESKTOP=hyprland
+for selector in "${HOST_MODULES[@]}"; do
+	_resolve_module "$selector"
+done
+rg -q $'desktop/hyprland\t.*\tarch:pkgbuild/zephyrus-shell$' "$TARGET_ROOT$PACKAGE_PLAN"
+rg -q $'desktop/hyprland\t.*\tarch:aur/hyprqt6engine$' "$TARGET_ROOT$PACKAGE_PLAN"
+for companion in dolphin koko okular ark kate kitty mpv kio-extras kio-fuse udisks2 hyprshot satty kooha wl-clipboard cliphist; do
+	rg -q "desktop/hyprland.*[[:space:]]$companion$" "$TARGET_ROOT$PACKAGE_PLAN"
+done
+if rg -q 'hyprutils-git|hyprlang-git|hyprqt6engine-git' "$TARGET_ROOT$PACKAGE_PLAN"; then
+	die 'desktop theme selected git replacements for stable Hyprland libraries'
+fi
+for tool in uv ruff ty; do
+	rg -q "dev/languages/python.*[[:space:]]$tool$" "$TARGET_ROOT$PACKAGE_PLAN"
+done
+if rg -q 'media/video/kodi|desktop/plasma|plasma-desktop|plasma-login-manager|power-profiles-daemon|tuned|cardwire' "$TARGET_ROOT$PACKAGE_PLAN"; then
+	die 'Hyprland selected an omitted desktop/media or rejected component'
+fi
+preflight_modules
+if DISTRO=fedora PACKAGE_MANAGER=dnf preflight_modules >"$TEST_ROOT/fedora-hyprland.log" 2>&1; then
+	die 'unsupported Fedora Hyprland runtime passed preflight'
+fi
+rg -q 'Arch only' "$TEST_ROOT/fedora-hyprland.log"
+DESKTOP=plasma
 
 MODULE_STATES=()
 MODULE_FILE_OWNERS=()

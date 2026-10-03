@@ -11,6 +11,14 @@ set -Eeuo pipefail
 source "$SETUP_ROOT/lib/module.sh"
 source "$SETUP_ROOT/lib/flatpak.sh"
 
+# Zephyrus provides its own media interface on Hyprland.
+module_check() {
+	[[ ${DESKTOP:-plasma} != hyprland ]]
+}
+
+# playercorefactory.xml launches host mpv.
+requires=(media/video/mpv)
+
 KODI_APP_ID="tv.kodi.Kodi"
 KODI_RELEASE="omega"
 

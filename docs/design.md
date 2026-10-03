@@ -118,7 +118,7 @@ carry the required AMD, Gamescope, and ASUS `asus-armoury` support.
 
 ## Modules
 
-`hosts/<hostname>.sh` is the sole selection root and contains an ordered
+`hosts/<HOST_PROFILE>.sh` is the sole selection root and contains an ordered
 `modules` array. Aggregate modules contain an explicit ordered `members` array.
 Selecting `gaming` expands that list; selecting `gaming/steam` selects only the
 leaf. Filesystem discovery is not execution, and duplicate selections execute
@@ -233,6 +233,16 @@ Non-native managers install system-wide wherever the manager supports it:
 User configuration may still be declared below `/etc/skel`; this is distinct
 from installing package payloads into a user's persistent home.
 
+## Desktop selection
+
+Installed configuration includes `HOST_PROFILE` and `DESKTOP`, independent of
+`HOSTNAME`. They are passed to every module subprocess; the desktop aggregate
+selects a named implementation plus its shared leaves. The common video
+aggregate includes Kodi, whose module check skips Hyprland. Zephyrus's public
+source is an Arch native package owned by `desktop/hyprland`, and Fedora
+Hyprland is rejected during preflight until its runtime is compatible. See
+[desktop profiles](desktops.md) for the complete package/session boundary.
+
 ## Local package recipes
 
 Locally maintained native recipes are data owned by their consuming leaf:
@@ -263,7 +273,9 @@ checks remain ordinary RPM queries.
 candidate's temporary `/run`. The generic `packages/update.sh` invokes each
 recipe-local `update.sh` for the selected distribution and exports that leaf's
 ephemeral recipe root to the builder source. Release-based recipes resolve the
-latest non-draft, non-prerelease GitHub release; commit-based recipes resolve
+latest non-draft, non-prerelease GitHub release; release responses are validated
+explicitly. Release-tag commit archives also select stable releases. Remaining
+snapshot exceptions are listed in `packages/README.md`; commit-based recipes resolve
 the default branch head and read their version from upstream metadata. Sources
 are downloaded and hashed before the package builder is called. Resolution is
 fail-closed: an unavailable API, source, or checksum aborts the rebuild rather

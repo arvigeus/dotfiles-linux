@@ -13,11 +13,21 @@ source "$PROJECT_ROOT/installer/efi.sh"
 source "$PROJECT_ROOT/installer/home.sh"
 
 RUN_MODULE_HEALTHCHECKS=false
-for argument in "$@"; do
-	case $argument in
+while (($#)); do
+	case $1 in
+	-h | --help)
+		printf 'Usage: rebuild.sh [--healthchecks] [--desktop plasma|hyprland]\nThe installed desktop is reused unless explicitly overridden for the candidate.\n'
+		exit 0
+		;;
 	--healthchecks) RUN_MODULE_HEALTHCHECKS=true ;;
-	*) die "Unknown rebuild option: $argument" ;;
+	--desktop)
+		(($# >= 2)) || die "--desktop requires plasma or hyprland"
+		REBUILD_DESKTOP=$2
+		shift
+		;;
+	*) die "Unknown rebuild option: $1" ;;
 	esac
+	shift
 done
 
 cleanup() {

@@ -6,6 +6,9 @@ if [[ ${1:-} == --detach-old-root ]]; then
 	# pivot_root(8)'s ". ." form stacks the old root on /. Detach that
 	# inaccessible mount after chroot has selected the new root.
 	umount --lazy /
+	# Match /proc to the private PID namespace. Its init exiting kills all
+	# build/helper daemons, so they cannot pin the candidate after cleanup.
+	mount -t proc -o nosuid,nodev,noexec proc /proc
 	exec "$@"
 fi
 

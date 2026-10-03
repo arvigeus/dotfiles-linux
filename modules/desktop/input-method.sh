@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ## Vietnamese Telex input through Fcitx 5
-## Disabled: rename this file to input-method.sh to enable it.
+## Disabled by module_check; enable explicitly after reviewing desktop integration.
 set -Eeuo pipefail
 
 source "$SETUP_ROOT/lib/module.sh"
@@ -17,12 +17,14 @@ packages=(
 	fcitx5-configtool
 	fcitx5-unikey
 )
-pkg_install "${packages[@]}"
+module_apply() {
+	system_set_env fcitx GTK_IM_MODULE fcitx
+	system_set_env fcitx QT_IM_MODULE fcitx
+	system_set_env fcitx XMODIFIERS @im=fcitx
+	system_set_env fcitx SDL_IM_MODULE fcitx
+}
 
-system_set_env fcitx GTK_IM_MODULE fcitx
-system_set_env fcitx QT_IM_MODULE fcitx
-system_set_env fcitx XMODIFIERS @im=fcitx
-system_set_env fcitx SDL_IM_MODULE fcitx
+module_entrypoint "$@"
 
 # After enabling, select Fcitx 5 in Plasma's Keyboard > Virtual Keyboard
 # settings and configure Unikey/Telex with fcitx5-configtool.

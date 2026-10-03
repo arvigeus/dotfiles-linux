@@ -15,8 +15,8 @@ own audio. Nothing forces maximum performance during ordinary desktop use.
 - ASUS ROG Zephyrus G14 GA402RK-L8149 (2022)
 - Ryzen 9 6900HS with Radeon 680M and Radeon RX 6800S (`1002:73ef`)
 - internal 2560x1600, 120 Hz adaptive-sync panel
-- external Dell 4K display around 75 Hz; exact connector and HDR/VRR capability
-  must be discovered from its EDID on the installed machine
+- external Dell S2722DC, 2560x1440 with 60/75 Hz modes (physically queried
+  2026-10-01); HDR/VRR still requires validation
 - original Steam Controller, ordinary gamepads, and a Steam Deck used as a
   separate Steam/Remote Play device
 
@@ -40,6 +40,35 @@ automatic gaming preset yet. Selecting a profile name without measuring the
 combined CPU/APU/dGPU power envelope, junction temperatures, and fan response
 has already proved insufficient. Exact PPT and fan values must come from a
 controlled GA402 observation rather than a copied Steam Deck or RyzenAdj value.
+
+### Physical investigation, 2026-10-01
+
+See [the physical observation record](../../docs/g14-study-2026-10-01.md).
+The running laptop had asusd, PPD, Cardwire, LACT and System76 scheduler active
+simultaneously. The latter four were removed; the inactive zephyrusctl/RyzenAdj
+persistence and SMU DKMS module were also removed. Reapplying ASUS Balanced
+restored its configured EPP, and the RX 6800S suspended without Cardwire during
+the bounded idle observation. These are physical results, not proof of safe
+sustained gaming or improved movie runtime.
+
+Zephyrus now uses the existing asusd profile owner and skips suspended GPU
+sensors. Standard firmware controls remain in ROG Control Center. The owner-selected mpv `generic-high` shader
+profile is the default; other profiles remain available. Repeated H.264 playback measurements favor the native
+OpenGL/VA-API path: roughly 7 W reported APU PPT and a suspended dGPU versus
+17–18 W and an active dGPU with Vulkan Video (the renderer selected the RX
+6800S). GA402RK provisioning therefore
+adds the native OpenGL renderer preference; battery endurance remains untested. A stale live Vulkan ICD override pointed at removed files;
+normal RADV driver discovery repaired initialization.
+
+The battery reports 49.949 Wh versus its original 76 Wh. Capacity loss limits
+runtime independently of software. Exact battery/video and gaming limits remain
+open until unplugged playback and the shutdown-producing game are measured.
+
+Fresh GA402RK installs start with native ASUS Balanced on AC and Quiet on
+battery, with linked EPP and no custom tuning groups. Native ASUS settings are
+preserved across rebuilds. A light RX 6800S graphics trial completed two minutes
+below the experimental stop thresholds, while an integrated-GPU trial reached
+the CPU stop threshold. Neither establishes sustained gaming safety.
 
 ## Architecture
 
@@ -235,7 +264,7 @@ On a current kernel/firmware combination, these are the realistic controls:
 | AC vs battery | `asusd` persists separate policy and EPP behavior | expected; verify the generated `/etc/asusd/asusd.ron` |
 | Fan curves | ASUS WMI through `asusctl`/ROG Control Center | expected; supported curve ranges must be queried |
 | CPU/APU/dGPU PPT/TDP | `asus-armoury` firmware attributes exposed by `asusctl armoury` | conditional on firmware; not Deck-compatible TDP |
-| CPU boost | no custom switch is installed | indirect influence through profile/EPP only unless the kernel exposes a supported control |
+| CPU boost | Zephyrus CPU details uses the kernel CPUFreq switch with a scoped polkit helper | switch is exposed on this machine; thermal/FPS comparison pending |
 | GPU application choice | `switcheroo-control` in hybrid mode | supported desktop mechanism |
 | Firmware GPU/MUX mode | ASUS tooling, applied safely by `asus-shutdown` when required | conditional; inspect this unit's reported capabilities |
 | Battery charge limit | ASUS tooling when firmware advertises it | expected; verify on hardware |
@@ -311,9 +340,9 @@ session uses one preferred output and leaves mode selection dynamic:
 2. connected internal eDP/DSI/LVDS panels;
 3. Gamescope auto-selection if neither can be discovered.
 
-This favors the external 4K display when docked without hard-coding its
+This favors the external display when docked without hard-coding its
 connector name. It also avoids forcing 2560x1600 assumptions onto the Dell or
-4K assumptions onto the internal panel. Override `SYSTEM_GAMING_OUTPUT` only if
+external-display assumptions onto the internal panel. Override `SYSTEM_GAMING_OUTPUT` only if
 connector enumeration chooses the wrong port.
 
 VRR is requested through `--adaptive-sync`; it only works if the active output,
@@ -678,6 +707,31 @@ For a future gaming-stack refresh:
    source's branch/SHA/commit date/review date atomically.
 9. Never claim GA402 runtime validation from source review; carry untested items
    into the checklist below.
+
+### Shell control follow-up, 2026-10-01
+
+The live audit confirms asusd active, PPD/tuned masked, and the removed power/GPU
+writers absent. Plasma PowerDevil is inactive in this Hyprland session; KDE's
+runtime behavior still needs a separate login test. The running kernel is still
+`7.1.4-1-g14`; the stock kernel is selected for the next boot, not yet validated.
+A leftover `MESA_VK_DEVICE_SELECT=1002:1681!` remained in the user manager after
+its persistent source was removed. Session cleanup removes that override for
+new services; existing processes require a new login.
+
+Zephyrus provides discovered per-application GPU choices through the active
+switcheroo-control service, using its PCI identities and scoped launch
+environments. Explicit Mesa Vulkan selection exposes only the chosen GPU. This
+is render-device selection, not firmware MUX switching or forced dGPU power-off.
+No Cardwire, zephyrusctl daemon, or global GPU policy is reintroduced.
+
+CPU boost control writes only the supported global CPUFreq `boost` node with
+polkit administrator authentication. It is manual and boot-scoped, with no timer
+or automatic profile assignment. Disabling boost is a useful comparison for
+shared cooling load, not a temperature or GPU-power limit. The owner reports
+AC Steam gaming shutdowns near a displayed 93 C, without a verified sensor
+identity. That remains an unresolved stability problem. Start from a logged,
+frame-capped representative game after the stock-kernel boot; do not begin with
+a combined stress-ng/GPU burn. Compare boost separately and preserve logs.
 
 ## Manual hardware test checklist
 

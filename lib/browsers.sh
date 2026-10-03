@@ -7,8 +7,7 @@
 ##   firefox_install_extensions <config-json> <dest>
 ##   chromium_install_extensions <config-json> [browser]
 
-# A deterministic profile so Firefox-based browsers don't auto-create a random
-# "*.default-release" one (which would never see our user.js).
+# Legacy profile registration for Zen. Firefox uses native AutoConfig/policies.
 gecko_profiles_ini() {
 	cat <<'EOF'
 [General]

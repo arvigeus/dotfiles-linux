@@ -38,3 +38,30 @@ accounts; Pacman or DNF installs the resulting native package.
 Recipes are a fallback. Prefer an existing trusted repository or the AUR when
 it already supplies the package. Source-provider behavior belongs in the
 module-local `sources/` directory or the shared top-level `sources/` directory.
+
+## Automatic refresh and stable sources
+
+Both `bootstrap.sh` and `rebuild.sh` call `run_modules`, which runs
+`_prepare_module_packages` before `_apply_package_plan`. All recipe-local
+`update.sh` files for selected modules and the target distribution run before
+any module packages are built or installed. No separate manual update command
+is required. Missing updaters or failed resolution abort provisioning; the
+tracked snapshots are not a fallback during a normal install/rebuild.
+
+`release_resolve` uses GitHub's latest stable release and explicitly rejects
+responses marked draft/prerelease or missing those flags.
+`release_commit_resolve` resolves that release tag through the commits API, so
+recipes using commit archives can select stable releases too. sosc (Arch and
+Fedora) and Fedora's Wallhaven widget now use this path rather than default
+branch HEAD. Repository/AUR packages follow their provider's published versions.
+
+Upstream exceptions checked on 2026-10-02: thumbfast and the Plasma Overview
+widget publish neither GitHub releases nor version tags. Their existing
+checksummed default-branch snapshots remain automatic, but are not described
+as stable releases. Zephyrus retains its explicit VCS recipe, resolved by
+makepkg at build time. GravityMark resolves the vendor's current installer.
+Recheck these exceptions when upstream starts publishing releases.
+
+The orchestration test in `tests/package-recipes.sh` checks both distributions,
+refresh-before-build ordering, preservation of tracked snapshots, and aborting
+before package/application phases on updater failure.

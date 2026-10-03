@@ -32,7 +32,7 @@ distro_detect_microcode_package() {
 distro_install_base_system() {
 	local packages=(
 		base "$KERNEL_PACKAGE" linux-firmware mkinitcpio btrfs-progs
-		cryptsetup curl efibootmgr jq go-yq
+		cryptsetup curl efibootmgr jq go-yq arch-install-scripts
 	)
 	local microcode_package
 	microcode_package=$(distro_detect_microcode_package)
@@ -42,7 +42,10 @@ distro_install_base_system() {
 	fi
 
 	log "Installing a clean Arch base"
-	timeout --foreground --signal=INT --kill-after=30s 7200 \
+	# pacstrap's keyring helpers can daemonize. Keep them inside the operation's
+	# lifetime so they cannot retain files on a candidate after cleanup.
+	unshare --mount --pid --fork --kill-child --mount-proc -- \
+		timeout --foreground --signal=INT --kill-after=30s 7200 \
 		pacstrap -K "$TARGET_ROOT" "${packages[@]}"
 }
 
