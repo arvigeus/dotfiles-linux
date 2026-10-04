@@ -8,6 +8,10 @@ source "$SETUP_ROOT/lib/json.sh"
 source "$SETUP_ROOT/lib/browsers.sh"
 source "$SETUP_ROOT/lib/flatpak.sh"
 
+module_check() {
+	return 1
+}
+
 packages=(
 	jq util-linux unzip curl
 	flathub/app.zen_browser.zen
