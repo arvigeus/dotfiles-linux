@@ -78,6 +78,17 @@ _write_mozlz4() {
 
 # ── Extensions ───────────────────────────────────────────────────────────────
 
+# Feature modules can contribute policies without replacing Firefox's extension
+# and search settings. Also consumed when Firefox is reapplied after a feature.
+firefox_merge_feature_policies() {
+	local directory=${FIREFOX_FEATURE_POLICIES_DIR:-/etc/$PROJECT_ID/firefox-policies.d}
+	local fragments=() path
+	for path in "$directory"/*.json; do
+		[[ ! -f $path ]] || fragments+=("$path")
+	done
+	jq -s 'reduce .[] as $policy ({}; . * $policy)' /dev/stdin "${fragments[@]}"
+}
+
 _firefox_install_extension() (
 	set -Eeuo pipefail
 	local url=$1 dest_dir=$2 id_fallback=${3:-}

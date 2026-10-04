@@ -40,7 +40,7 @@ firefox_policies() {
 				| {Name: .name, URLTemplate: .template, IconURL: .icon, Alias: .alias}
 			]}
 		}}
-	' <<<"${1:?browser configuration required}"
+	' <<<"${1:?browser configuration required}" | firefox_merge_feature_policies
 }
 
 module_apply() {

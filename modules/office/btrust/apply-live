@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# Migrate an existing Arch installation without rebuilding or reinstalling packages.
+set -Eeuo pipefail
+module_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+files=$module_dir/files
+desktop_user=${1:-${SUDO_USER:-}}
+[[ $EUID == 0 && $desktop_user =~ ^[a-z_][a-z0-9_-]*$ && $desktop_user != root ]] || {
+	printf 'Usage: sudo modules/office/btrust/apply-live USERNAME\n' >&2
+	exit 2
+}
+[[ -f /etc/arch-release ]] || { printf 'This migration supports Arch only.\n' >&2; exit 1; }
+record=$(getent passwd "$desktop_user")
+IFS=: read -r _ _ desktop_uid desktop_gid _ desktop_home _ <<<"$record"
+for command in jq certutil modutil systemctl systemd-escape udevadm runuser rg; do command -v "$command" >/dev/null; done
+[[ -x /opt/btrustbiss/bin/BISS && -r /usr/lib/pkcs11/libIDPrimePKCS11.so ]]
+if pgrep -u "$desktop_uid" -x 'chromium|chrome|google-chrome|chrome_crashpad' >/dev/null; then
+	printf 'Close Chromium/Chrome before migrating the NSS database.\n' >&2
+	exit 1
+fi
+
+user_command() {
+	runuser -u "$desktop_user" -- env HOME="$desktop_home" \
+		XDG_CONFIG_HOME="$desktop_home/.config" XDG_DATA_HOME="$desktop_home/.local/share" \
+		XDG_STATE_HOME="$desktop_home/.local/state" XDG_RUNTIME_DIR="/run/user/$desktop_uid" \
+		DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$desktop_uid/bus" "$@"
+}
+
+install -d -m 0700 /var/lib/system-btrust/backups
+backup=$(mktemp -d /var/lib/system-btrust/backups/live.XXXXXX)
+printf '%s\n' "$backup" > /var/lib/system-btrust/last-live-backup
+chmod 0600 /var/lib/system-btrust/last-live-backup
+backup_path() {
+	local path=$1
+	if [[ -e $path || -L $path ]]; then
+		cp -a --parents -- "$path" "$backup/"
+		printf 'present\t%s\n' "$path" >>"$backup/manifest.tsv"
+	else
+		printf 'absent\t%s\n' "$path" >>"$backup/manifest.tsv"
+	fi
+}
+while IFS= read -r -d '' path; do backup_path "/${path#"$files/"}"; done < <(find "$files" -type f -print0)
+for path in /usr/share/applications/btrustbiss-BISS.desktop \
+	/etc/polkit-1/rules.d/50-system-btrust.rules \
+	/etc/xdg/autostart/btrustbiss-BISS.desktop /etc/xdg/autostart/SACMonitor.desktop \
+	/usr/lib/firefox/distribution/policies.json /etc/firefox/policies/policies.json \
+	"$desktop_home/.config/autostart/btrustbiss-BISS.desktop" "$desktop_home/.config/autostart/SACMonitor.desktop" \
+	"$desktop_home/AppData/Roaming/BISS/Settings.xml" \
+	"$desktop_home/.pki/nssdb" "$desktop_home/.local/share/pki/nssdb" \
+	"$desktop_home/.local/state/btrust"; do backup_path "$path"; done
+systemctl is-enabled pcscd.service pcscd.socket safenetauthenticationclient.service >"$backup/boot-state.txt" 2>&1 || :
+systemctl is-active pcscd.service pcscd.socket safenetauthenticationclient.service >"$backup/run-state.txt" 2>&1 || :
+
+# Stop an old unmanaged instance before replacing its settings. The selected
+# paths/names cannot match another user's process or an unrelated Java app.
+if user_command systemctl --user cat system-btrust.service >/dev/null 2>&1; then
+	user_command systemctl --user stop system-btrust.service
+fi
+pkill -TERM -u "$desktop_uid" -f '^/opt/btrustbiss/bin/BISS([[:space:]]|$)' || :
+pkill -TERM -u "$desktop_uid" -x SACMonitor || :
+
+while IFS= read -r -d '' path; do
+	destination="/${path#"$files/"}"
+	install -D -m "$(stat -c %a "$path")" "$path" "$destination"
+done < <(find "$files" -type f -print0)
+cat > /etc/polkit-1/rules.d/50-system-btrust.rules <<EOF
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.systemd1.manage-units" &&
+        action.lookup("unit") == "system-btrust.target" &&
+        subject.user == "$desktop_user") {
+        var verb = action.lookup("verb");
+        if (verb == "stop" || verb == "start") return polkit.Result.YES;
+    }
+});
+EOF
+chmod 0644 /etc/polkit-1/rules.d/50-system-btrust.rules
+install -d -m 0755 -o "$desktop_uid" -g "$desktop_gid" "$desktop_home/.config/autostart"
+for entry in btrustbiss-BISS SACMonitor; do
+	path="$desktop_home/.config/autostart/$entry.desktop"
+	printf '[Desktop Entry]\nType=Application\nName=%s\nHidden=true\n' "$entry" >"$path"
+	chmod 0644 "$path"
+	chown "$desktop_uid:$desktop_gid" "$path"
+done
+
+policies=/usr/lib/firefox/distribution/policies.json
+original=$backup/firefox-original.json
+if [[ -f $policies ]]; then
+	cp -- "$policies" "$original"
+elif [[ -f /etc/firefox/policies/policies.json ]]; then
+	cp -- /etc/firefox/policies/policies.json "$original"
+else
+	printf '{"policies":{}}\n' >"$original"
+fi
+jq -s '.[0] * .[1]' "$original" /etc/system/firefox-policies.d/btrust.json >"$backup/firefox-merged.json"
+install -Dm644 "$backup/firefox-merged.json" "$policies"
+
+systemctl daemon-reload
+/usr/local/libexec/system-btrust-maintain
+user_command /usr/local/libexec/system-btrust-browser-setup
+user_command /usr/local/libexec/system-btrust-settings
+user_command systemctl --user daemon-reload
+udevadm control --reload-rules
+if command -v update-desktop-database >/dev/null; then update-desktop-database /usr/share/applications; fi
+printf 'Live B-Trust configuration installed. Backup: %s\n' "$backup"
+printf 'Launch B-Trust QES from Applications or reconnect the reader after desktop login.\n'
