@@ -33,7 +33,7 @@ Zephyrus generates application colors and fonts from
 updates KDE/Qt 5/Qt 6, GTK 3/GTK 4/libadwaita, Kitty, installed Zed/VS Code
 settings, the dark/light portal preference and Hyprland borders. KDE's standalone
 platform themes consume `kdeglobals` with Fusion widgets; no Plasma session runs.
-The module supplies the Qt 5 and Qt 6 integration libraries. Application icons
+The upstream full-session package supplies the Qt 5 and Qt 6 integration libraries. Application icons
 use Breeze; shell controls keep bundled Lucide icons.
 
 Installed Flatpaks receive per-app read access to the GTK appearance directories
@@ -47,7 +47,7 @@ The stable `hyprqt6engine` package remains available for users who explicitly
 select it. Its generated config points at the same Zephyrus colors and fonts;
 KDE integration is the default so Qt 5 applications share the palette too.
 Platform variables are scoped to Hyprland and imported through UWSM. Appearance
-files in the installer are bootstrap defaults; runtime generation owns subsequent
+files provisioned by the upstream package are bootstrap defaults; runtime generation owns subsequent
 changes and home reconciliation preserves user edits.
 
 ## Capture and paste
@@ -63,10 +63,10 @@ changes and home reconciliation preserves user edits.
 - Delete removes a selected clipboard entry. Clear history requires a second
   click within five seconds.
 
-Screenshots dismiss shell overlays before selection and use the user's localized
+Screenshots preserve shell overlays during selection and use the user's localized
 XDG Pictures directory. Hyprshot, Satty and Kooha are official Arch packages.
 Capture scripts, Satty configuration and shortcuts belong to `zephyrus-shell`;
-this module declares dependencies. Kooha retains its normal application settings
+the upstream package declares their dependencies. Kooha retains its normal application settings
 and uses the existing PipeWire/desktop-portal stack. The shortcut opens its
 controls; starting and stopping a recording happens there. The clipboard session
 has separate text and image

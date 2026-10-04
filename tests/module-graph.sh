@@ -99,9 +99,8 @@ DESKTOP=hyprland
 for selector in "${HOST_MODULES[@]}"; do
 	_resolve_module "$selector"
 done
-rg -q $'desktop/hyprland\t.*\tarch:pkgbuild/zephyrus-shell$' "$TARGET_ROOT$PACKAGE_PLAN"
-rg -q $'desktop/hyprland\t.*\tarch:aur/hyprqt6engine$' "$TARGET_ROOT$PACKAGE_PLAN"
-for companion in dolphin koko okular ark kate kitty mpv kio-extras kio-fuse udisks2 hyprshot satty kooha wl-clipboard cliphist; do
+rg -q $'desktop/hyprland\t.*\tarch:git-pkgbuild/github.com/arvigeus/zephyrus-shell$' "$TARGET_ROOT$PACKAGE_PLAN"
+for companion in koko okular ark kate kio-extras kio-fuse udisks2; do
 	rg -q "desktop/hyprland.*[[:space:]]$companion$" "$TARGET_ROOT$PACKAGE_PLAN"
 done
 if rg -q 'hyprutils-git|hyprlang-git|hyprqt6engine-git' "$TARGET_ROOT$PACKAGE_PLAN"; then
@@ -112,6 +111,10 @@ for tool in uv ruff ty; do
 done
 if rg -q 'media/video/kodi|desktop/plasma|plasma-desktop|plasma-login-manager|power-profiles-daemon|tuned|cardwire' "$TARGET_ROOT$PACKAGE_PLAN"; then
 	die 'Hyprland selected an omitted desktop/media or rejected component'
+fi
+# Shell dependency metadata belongs upstream, not in this leaf's plan.
+if rg -q 'desktop/hyprland.*[[:space:]](quickshell|python-dateutil|qmltermwidget|hyprshot|cliphist)$' "$TARGET_ROOT$PACKAGE_PLAN"; then
+	die 'Zephyrus runtime dependency duplicated in dotfiles plan'
 fi
 preflight_modules
 if DISTRO=fedora PACKAGE_MANAGER=dnf preflight_modules >"$TEST_ROOT/fedora-hyprland.log" 2>&1; then

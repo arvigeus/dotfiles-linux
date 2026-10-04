@@ -239,7 +239,7 @@ Installed configuration includes `HOST_PROFILE` and `DESKTOP`, independent of
 `HOSTNAME`. They are passed to every module subprocess; the desktop aggregate
 selects a named implementation plus its shared leaves. The common video
 aggregate includes Kodi, whose module check skips Hyprland. Zephyrus's public
-source is an Arch native package owned by `desktop/hyprland`, and Fedora
+source provides its own canonical Arch recipe, consumed by `desktop/hyprland`, and Fedora
 Hyprland is rejected during preflight until its runtime is compatible. See
 [desktop profiles](desktops.md) for the complete package/session boundary.
 
@@ -280,6 +280,16 @@ the default branch head and read their version from upstream metadata. Sources
 are downloaded and hashed before the package builder is called. Resolution is
 fail-closed: an unavailable API, source, or checksum aborts the rebuild rather
 than silently using a stale snapshot.
+
+External upstream-owned recipes are package sources, not local recipe copies.
+The Hyprland leaf's module-local `git-pkgbuild` provider accepts `HOST/PATH`,
+fetches HTTPS default-branch HEAD and builds all split outputs through the same
+native builder. It obtains metadata from the fetched PKGBUILD before dependency
+resolution. Source preparation/install happen only after planning, and every
+rebuild installs the current source revision. Generated installed metadata stays
+in candidate system state, never in the tracked recipe tree. A public upstream
+provisioning command owns session defaults and emits reconciliation policies;
+the module does not interpret internal shell paths.
 
 ## Files and ownership
 

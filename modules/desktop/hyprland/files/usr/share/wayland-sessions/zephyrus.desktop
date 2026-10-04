@@ -1,7 +1,0 @@
-[Desktop Entry]
-Name=Zephyrus (Hyprland)
-Comment=Zephyrus Shell on Hyprland
-Exec=uwsm start -e -D Hyprland hyprland.desktop
-TryExec=uwsm
-Type=Application
-DesktopNames=Hyprland

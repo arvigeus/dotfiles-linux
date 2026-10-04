@@ -58,8 +58,8 @@ branch HEAD. Repository/AUR packages follow their provider's published versions.
 Upstream exceptions checked on 2026-10-02: thumbfast and the Plasma Overview
 widget publish neither GitHub releases nor version tags. Their existing
 checksummed default-branch snapshots remain automatic, but are not described
-as stable releases. Zephyrus retains its explicit VCS recipe, resolved by
-makepkg at build time. GravityMark resolves the vendor's current installer.
+as stable releases. Zephyrus owns its PKGBUILD upstream and is consumed through the Hyprland
+leaf's Git source provider, rather than a local recipe/update.sh. GravityMark resolves the vendor's current installer.
 Recheck these exceptions when upstream starts publishing releases.
 
 The orchestration test in `tests/package-recipes.sh` checks both distributions,

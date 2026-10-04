@@ -73,40 +73,51 @@ Lua/native scrolling and a Qt 6 QML terminal. Fedora's published runtime package
 lag those requirements; enabling it needs compatible packages and a booted
 Fedora session test, not just renamed dependencies.
 
-The `desktop/hyprland` leaf declares Hyprland, Quickshell, Qt/QML, Python runtime,
-portals, hyprpolkitagent, lock/idle, audio, connectivity, UPower, terminals, fonts
-and display helpers. It builds the latest public `arvigeus/zephyrus-shell` HEAD as a
-native `zephyrus-shell` package under `/usr/share/zephyrus-shell`. The source tree
-is retained coherently; `/usr/share/zephyrus-shell/REVISION` records its commit.
-It never uses the sibling development checkout or executes `setup-system.sh`.
+The `desktop/hyprland` leaf requests
+`arch:git-pkgbuild/github.com/arvigeus/zephyrus-shell`. Its module-local provider
+is generic: it fetches a Git repository containing a root PKGBUILD and installs
+all its split outputs with the existing unprivileged makepkg/pacman builder.
+The shell repository owns dependency metadata, system payloads, installation
+paths, session entry points and appearance defaults. Dotfiles retains selected
+companion applications/MIME defaults, greetd policy and machine DDC permissions.
+The provider stays module-local because this is currently its only consumer;
+move it to shared sources if another leaf needs it.
 
-The Zephyrus recipe uses an unpinned Git source. Every build fetches the current
-public default-branch HEAD; `pkgver()` derives its date, revision count and hash
-from the checkout, and `REVISION` records the full commit actually packaged.
-`packages/update.sh` preserves this behavior without pinning a commit or archive.
-The resolved recipe metadata is retained under
-`/var/log/system/package-recipes/desktop/hyprland`. Other recipes resolve their
-upstream versions in a disposable recipe copy. A rebuild can therefore advance
-Zephyrus; it is not a reproducible lock of all upstream versions. The previous
-root retains its prior package for rollback.
+Every bootstrap/rebuild clones current public default-branch HEAD. Standard Git
+URL rewriting makes makepkg use that same checkout for matching VCS sources,
+avoiding another fetch and metadata/payload revision races. Generated SRCINFO is
+retained under `/var/lib/system/git-pkgbuild` for native installed-state/removal
+queries; no copied metadata or recipe is tracked here. Existing local recipes
+still run through `packages/update.sh`; Zephyrus no longer has such a recipe or
+a recipe updater. Rebuild's normal source-install phase refreshes it each time.
+The active-root updater's pacman transaction updates repository packages only;
+it does not update this external VCS recipe. Use rebuild, or the upstream local
+build/install command when updating the mutable running root.
 
-The home defaults contain a Lua shim calling
-`/usr/share/zephyrus-shell/hyprland/hyprland.lua`, lock/idle configuration links, and
-Hyprland/GTK portal routing and standard systemd user services. UWSM owns
-the session lifecycle; greetd launches the UWSM Zephyrus session. Audio, networking and Bluetooth remain owned by their hardware modules.
-DDC uses packaged I2C permissions plus user membership. Profiles use the
-existing asusd owner on ASUS hardware, with an active PPD fallback elsewhere.
-GPU selection uses switcheroo-control. No fan or PPT values are claimed safe
-without a physical load test. Shell fixes are published in the companion
-repository and consumed directly, without a local session patch. Provider URLs and the private
-`zephyrus-shell/media.json` remain user configuration outside the package.
+After installation the module calls the public `zephyrus-shell-session provision`
+command in the candidate skeleton. Zephyrus emits the reconciliation inventory,
+so dotfiles does not enumerate session files. Generated session configuration
+survives a switch to the fallback desktop; appearance defaults preserve personal
+edits. Healthchecks call `zephyrus-shell-session check` and verify greetd policy.
+Audio/network/Bluetooth modules deliberately own service activation and retained
+machine state. DDC module loading on future boots and I2C membership remain an
+explicit machine policy here. The packaged hardware helper is available for
+standalone setup, but is not run against the active kernel from a candidate.
+No new power-profile authority is selected.
 
-The self-contained desktop companion set and integration choices are described in
-[Hyprland desktop kit](hyprland-desktop-kit.md).
+For source development use the upstream `scripts/build-package.sh`, which
+includes non-ignored working-tree changes without modifying Git history.
+For a direct provider test on the running root, set `GIT_PKGBUILD_LOCAL_DIR` to
+an explicit local checkout and invoke the provider through the normal source
+contract. See [source workflow](../sources/README.md). Rebuild forwards this
+variable, but the path must already exist **inside the candidate namespace**;
+it deliberately does not bind-mount or discover the developer's home. Ordinary
+production rebuilds leave it unset and use remote sources. Publish the upstream
+packaging changes before a fresh remote rebuild.
 
-Healthchecks verify commands, the installed revision, shim, Python imports,
-polkit unit and enabled login manager. Session startup still requires a live
-login test. See [VM validation](vm-validation.md).
+Private provider configuration remains outside packages. Companion application
+choices are described in [Hyprland desktop kit](hyprland-desktop-kit.md).
+Session startup still needs a live login test; see [VM validation](vm-validation.md).
 
 ## Python development
 

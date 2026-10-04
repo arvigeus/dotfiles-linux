@@ -4,6 +4,7 @@ set -Eeuo pipefail
 TEST_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 bash "$TEST_ROOT/package.sh"
 bash "$TEST_ROOT/package-recipes.sh"
+bash "$TEST_ROOT/git-pkgbuild.sh"
 bash "$TEST_ROOT/module.sh"
 bash "$TEST_ROOT/module-graph.sh"
 bash "$TEST_ROOT/config.sh"

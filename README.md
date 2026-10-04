@@ -202,7 +202,8 @@ Fedora-specific backend assumptions and validation points are documented in
 ## Desktop and private configuration
 
 Plasma supports Arch and Fedora. Zephyrus Hyprland currently supports Arch,
-with its public source packaged under `/usr/share/zephyrus-shell`. Desktop
+with its public source and canonical PKGBUILD consumed through a module-local
+Git source provider. Desktop
 selection persists across rebuilds; `rebuild.sh --desktop hyprland` switches the
 candidate. See [profiles and Python tooling](docs/desktops.md).
 

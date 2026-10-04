@@ -292,6 +292,7 @@ _apply_package_plan() {
 	log "Installing the planned package set"
 	target_namespace /usr/bin/env \
 		HOME=/root \
+		GIT_PKGBUILD_LOCAL_DIR="${GIT_PKGBUILD_LOCAL_DIR:-}" \
 		SETUP_ROOT="/run/$PROJECT_ID" \
 		DISTRO="$DISTRO" \
 		PACKAGE_MANAGER="$PACKAGE_MANAGER" \

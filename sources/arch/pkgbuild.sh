@@ -8,8 +8,10 @@ _PKGBUILD_READY=/var/lib/$PROJECT_ID/pkgbuild-ready
 
 _pkgbuild_make() {
 	local directory=${1:?A build directory is required}
+	shift
+	local build_environment=("$@")
 	sudo --user "$_PKGBUILD_USER" \
-		env HOME="$_PKGBUILD_HOME" \
+		env HOME="$_PKGBUILD_HOME" "${build_environment[@]}" \
 		bash -c 'cd -- "$1" && exec makepkg --noconfirm --needed --syncdeps --install --cleanbuild --clean' \
 		bash "$directory"
 }
