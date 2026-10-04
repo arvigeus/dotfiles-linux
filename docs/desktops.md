@@ -7,7 +7,9 @@ keys use their existing hostname as the profile and default to Plasma.
 
 The installer passes desktop/profile values to every module's plan, apply and
 healthcheck process, including preflight. `desktop/module.sh` selects the
-chosen implementation alongside shared Electron defaults and fonts. A plan
+chosen implementation alongside shared Electron defaults and fonts. The
+`hardware/keyboard/input-method` module owns
+[keyboard languages and on-demand Vietnamese input](../modules/hardware/keyboard/input-method/README.md). A plan
 records each package's declaring leaf in `/var/log/system/package-plan.tsv`,
 so its owner is directly visible.
 

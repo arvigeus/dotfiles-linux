@@ -89,15 +89,6 @@ module_apply() {
 	# kwriteconfig6 --file "kscreenlockerrc" --group "Greeter" --key "WallpaperPlugin" "com.plasma.wallpaper.wallhaven"
 	# kwriteconfig6 --file "kscreenlockerrc" --group "Greeter" --group "Wallpaper" --group "com.plasma.wallpaper.wallhaven" --group "General" --key "WallpaperDelay" "1800"
 
-	# US and Bulgarian phonetic layouts, switched per window with Alt+Shift.
-	kde_default kxkbrc Layout DisplayNames ,
-	kde_default kxkbrc Layout LayoutList us,bg
-	kde_default kxkbrc Layout Options terminate:ctrl_alt_bksp,grp:alt_shift_toggle
-	kde_default kxkbrc Layout ResetOldOptions true
-	kde_default kxkbrc Layout SwitchMode Window
-	kde_default kxkbrc Layout Use true
-	kde_default kxkbrc Layout VariantList ,phonetic
-
 	# Passwordless graphical login cannot pass a password to an encrypted wallet.
 	# Disable KWallet instead of adding another prompt or an experimental backend.
 	kde_default kwalletrc Wallet Enabled false
@@ -109,7 +100,7 @@ module_apply() {
 	kde_default kdeglobals KDE DefaultDarkLookAndFeel org.kde.breezedark.desktop
 
 	for config in \
-		kdeglobals dolphinrc ksmserverrc kwinrc ksplashrc kscreenlockerrc kxkbrc kwalletrc; do
+		kdeglobals dolphinrc ksmserverrc kwinrc ksplashrc kscreenlockerrc kwalletrc; do
 		home_strategy ".config/$config" ini unchanged
 	done
 

@@ -153,4 +153,19 @@ if _register_module_files files-link "$TEST_ROOT/files-link" 2>/dev/null; then
 	die 'a symlink in a module file overlay was accepted'
 fi
 
+# Bulgarian can be selected without installing a Vietnamese input daemon.
+MODULE_STATES=()
+MODULE_FILE_OWNERS=()
+SELECTED_MODULE_IDS=()
+SELECTED_MODULE_FILES=()
+SELECTED_MODULE_DIRS=()
+: >"$TARGET_ROOT$PACKAGE_PLAN"
+_resolve_module hardware/keyboard/input-method/bg
+rg -q 'hardware/keyboard/input-method/common.*[[:space:]]jq$' "$TARGET_ROOT$PACKAGE_PLAN"
+if rg -q 'fcitx|python' "$TARGET_ROOT$PACKAGE_PLAN"; then
+	die 'Bulgarian-only input selected a Vietnamese daemon or Python runtime'
+fi
+_resolve_module hardware/keyboard/input-method/vn
+rg -q 'hardware/keyboard/input-method/vn.*[[:space:]]fcitx5-unikey$' "$TARGET_ROOT$PACKAGE_PLAN"
+
 printf 'module graph: ok\n'

@@ -8,6 +8,7 @@ source "$SETUP_ROOT/lib/env.sh"
 
 ## Electron apps — force native Wayland backend (HiDPI, fractional scaling)
 module_apply() {
+    # Deprecated in Electron 39+
 	system_set_env electron ELECTRON_OZONE_PLATFORM_HINT wayland
 }
 

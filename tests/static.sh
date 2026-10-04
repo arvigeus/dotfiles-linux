@@ -12,6 +12,7 @@ g14_observer="$PROJECT_ROOT/modules/hardware/devices/zephyrus/files/usr/local/bi
 ufw_runner="$PROJECT_ROOT/modules/system/security/ufw/files/usr/local/libexec/system-apply-ufw-rules"
 libvirt_ufw="$PROJECT_ROOT/modules/system/virtualization/virt-manager/files/usr/local/libexec/system-ufw-rules.d/30-libvirt"
 ssh_ufw="$PROJECT_ROOT/modules/system/security/ssh/server/files/usr/local/libexec/system-ufw-rules.d/10-openssh"
+bash -n "$PROJECT_ROOT/modules/hardware/keyboard/input-method/system-input-method"
 bash -n "$gaming_session"
 bash -n "$g14_observer"
 bash -n "$ufw_runner"

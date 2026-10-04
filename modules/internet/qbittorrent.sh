@@ -7,11 +7,12 @@ source "$SETUP_ROOT/lib/module.sh"
 source "$SETUP_ROOT/lib/flatpak.sh"
 
 packages=(
-	flathub/org.qbittorrent.qBittorrent
+	#flathub/org.qbittorrent.qBittorrent
+	qbittorrent
 )
-module_apply() {
-	flatpak_alias qbittorrent org.qbittorrent.qBittorrent
-}
+# module_apply() {
+# 	flatpak_alias qbittorrent org.qbittorrent.qBittorrent
+# }
 
 module_entrypoint "$@"
 
