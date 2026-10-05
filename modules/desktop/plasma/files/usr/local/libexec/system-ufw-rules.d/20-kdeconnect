@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-set -Eeuo pipefail
-
-if ufw app info KDEConnect >/dev/null 2>&1; then
-	ufw allow KDEConnect
-else
-	ufw allow 1714:1764/tcp
-	ufw allow 1714:1764/udp
-fi

@@ -4,8 +4,6 @@ set -Eeuo pipefail
 
 source "$SETUP_ROOT/lib/module.sh"
 
-requires=(system/security/ufw)
-
 packages=(
 	# Desktop and login manager
 	plasma-desktop
@@ -40,8 +38,6 @@ packages=(
 	fedora:kf6-kimageformats
 
 	# Plasma applications
-	arch:kdeconnect
-	fedora:kde-connect
 	arch:partitionmanager
 	fedora:kde-partitionmanager
 

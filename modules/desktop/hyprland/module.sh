@@ -23,6 +23,8 @@ module_apply() {
 	# The package owns its payload and emits its reconciliation inventory.
 	mkdir -p "/etc/$PROJECT_ID"
 	zephyrus-shell-session provision --home-strategies "/etc/$PROJECT_ID/home-strategies.tsv"
+	# The installed shell owns WARP policy and its authorization.
+	zephyrus-shell-warp setup --user "$USERNAME" --offline
 
 	printf 'i2c-dev\n' | file_write /etc/modules-load.d/ddc.conf
 	getent group i2c >/dev/null || groupadd --system i2c

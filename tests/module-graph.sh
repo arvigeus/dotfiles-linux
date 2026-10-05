@@ -68,9 +68,8 @@ rg -q $'system/security/ssh/client\t.*\tarch:openssh$' "$TARGET_ROOT$PACKAGE_PLA
 if rg -q 'openssh-server' "$TARGET_ROOT$PACKAGE_PLAN"; then
 	die 'soft-disabled SSH server contributed packages to the plan'
 fi
-if rg -q 'cloudflare-warp-bin' "$TARGET_ROOT$PACKAGE_PLAN"; then
-	die 'soft-disabled Cloudflare module contributed packages to the plan'
-fi
+rg -q 'internet/cloudflare.*arch:aur/cloudflare-warp-nox-bin$' "$TARGET_ROOT$PACKAGE_PLAN"
+rg -q 'communication/kdeconnect.*arch:kdeconnect$' "$TARGET_ROOT$PACKAGE_PLAN"
 
 validation_plan="$TEST_ROOT/validation-plan.tsv"
 sed "s#\t/run/$PROJECT_ID/#\t$PROJECT_ROOT/#" \
@@ -82,6 +81,25 @@ _pkg_validate_plan "$validation_plan"
 unset SETUP_ROOT
 preflight_modules
 DISTRO=fedora PACKAGE_MANAGER=dnf preflight_modules
+
+# Resolve Fedora separately too: a scoped declaration alone does not validate
+# the new leaf-owned repository provider or shared KDE Connect ownership.
+(
+	DISTRO=fedora PACKAGE_MANAGER=dnf
+	MODULE_STATES=() MODULE_FILE_OWNERS=()
+	SELECTED_MODULE_IDS=() SELECTED_MODULE_FILES=() SELECTED_MODULE_DIRS=()
+	PACKAGE_PLAN=/run/system-fedora-package-plan.tsv
+	: >"$TARGET_ROOT$PACKAGE_PLAN"
+	_resolve_module internet/cloudflare
+	_resolve_module desktop/plasma
+	_resolve_module communication/kdeconnect
+	rg -q 'internet/cloudflare.*fedora:cloudflare/cloudflare-warp$' "$TARGET_ROOT$PACKAGE_PLAN"
+	rg -q 'communication/kdeconnect.*fedora:kde-connect$' "$TARGET_ROOT$PACKAGE_PLAN"
+	validation_plan="$TEST_ROOT/fedora-validation-plan.tsv"
+	sed "s#\t/run/$PROJECT_ID/#\t$PROJECT_ROOT/#" "$TARGET_ROOT$PACKAGE_PLAN" >"$validation_plan"
+	SETUP_ROOT=$PROJECT_ROOT
+	_pkg_validate_plan "$validation_plan"
+)
 
 # Both profiles resolve real modules, and the package plan explains ownership.
 rg -q $'media/video/kodi\t' "$TARGET_ROOT$PACKAGE_PLAN"
@@ -100,6 +118,7 @@ for selector in "${HOST_MODULES[@]}"; do
 	_resolve_module "$selector"
 done
 rg -q $'desktop/hyprland\t.*\tarch:git-pkgbuild/github.com/arvigeus/zephyrus-shell$' "$TARGET_ROOT$PACKAGE_PLAN"
+rg -q 'communication/kdeconnect.*arch:kdeconnect$' "$TARGET_ROOT$PACKAGE_PLAN"
 for companion in koko okular ark kate kio-extras kio-fuse udisks2; do
 	rg -q "desktop/hyprland.*[[:space:]]$companion$" "$TARGET_ROOT$PACKAGE_PLAN"
 done
