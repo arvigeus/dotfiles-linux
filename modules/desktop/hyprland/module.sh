@@ -30,6 +30,14 @@ module_apply() {
 	getent group i2c >/dev/null || groupadd --system i2c
 	usermod --append --groups i2c "$USERNAME"
 	getent passwd greeter >/dev/null || useradd --system --no-create-home --shell /usr/bin/nologin greeter
+	# greetd runs initial_session once per boot; logout returns to tuigreet.
+	# The file overlay resets the greeter configuration before each apply.
+	file_append /etc/greetd/config.toml <<EOF
+
+[initial_session]
+command = "uwsm start -e -D Hyprland hyprland.desktop"
+user = "$USERNAME"
+EOF
 	systemctl enable greetd.service
 }
 
@@ -37,6 +45,9 @@ module_healthcheck() {
 	zephyrus-shell-session check
 	command -v tuigreet >/dev/null
 	systemctl is-enabled --quiet greetd.service
+	grep -Fxq '[initial_session]' /etc/greetd/config.toml
+	grep -Fxq 'command = "uwsm start -e -D Hyprland hyprland.desktop"' /etc/greetd/config.toml
+	grep -Fxq "user = \"$USERNAME\"" /etc/greetd/config.toml
 	[[ -s /etc/xdg/hyprland-mimeapps.list ]]
 }
 

@@ -16,7 +16,14 @@ so its owner is directly visible.
 | Selection | Desktop owner | Login owner | Desktop-specific media |
 | --- | --- | --- | --- |
 | Plasma | `desktop/plasma` | Plasma Login Manager, existing autologin policy | common media module includes Kodi |
-| Hyprland | `desktop/hyprland` | greetd/tuigreet, password login | Kodi skips Hyprland |
+| Hyprland | `desktop/hyprland` | greetd, once-per-boot autologin; tuigreet after logout | Kodi skips Hyprland |
+
+Hyprland automatically logs in the configured `USERNAME` through UWSM at boot.
+Logging out returns to tuigreet, where another installed Wayland session can be
+selected and authenticated. The module writes greetd's `initial_session` for
+autologin and keeps its session chooser as `default_session`. greetd's runfile
+prevents autologin from repeating after logout or a greetd restart until the next
+boot; see the [greetd configuration manual](https://man.archlinux.org/man/greetd.5.en).
 
 mpv, Syncplay, VLC, YouTube and other media leaves stay in common composition.
 Kodi explicitly requires mpv for its configured external-player integration.
