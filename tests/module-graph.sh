@@ -118,6 +118,7 @@ for selector in "${HOST_MODULES[@]}"; do
 	_resolve_module "$selector"
 done
 rg -q $'desktop/hyprland\t.*\tarch:git-pkgbuild/github.com/arvigeus/zephyrus-shell$' "$TARGET_ROOT$PACKAGE_PLAN"
+rg -q $'desktop/hyprland\t.*\tsource:arch:multilib$' "$TARGET_ROOT$PACKAGE_PLAN"
 rg -q 'communication/kdeconnect.*arch:kdeconnect$' "$TARGET_ROOT$PACKAGE_PLAN"
 for companion in koko okular ark kate kio-extras kio-fuse udisks2; do
 	rg -q "desktop/hyprland.*[[:space:]]$companion$" "$TARGET_ROOT$PACKAGE_PLAN"
@@ -141,6 +142,21 @@ if DISTRO=fedora PACKAGE_MANAGER=dnf preflight_modules >"$TEST_ROOT/fedora-hyprl
 fi
 rg -q 'Arch only' "$TEST_ROOT/fedora-hyprland.log"
 DESKTOP=plasma
+
+# The minimal VM has no Steam/GPU module to enable umu's transitive libraries.
+(
+	MODULE_STATES=() MODULE_FILE_OWNERS=()
+	SELECTED_MODULE_IDS=() SELECTED_MODULE_FILES=() SELECTED_MODULE_DIRS=()
+	HOST_PROFILE=vm DESKTOP=hyprland
+	PACKAGE_PLAN=/run/system-vm-package-plan.tsv
+	: >"$TARGET_ROOT$PACKAGE_PLAN"
+	_load_host_modules
+	for selector in "${HOST_MODULES[@]}"; do _resolve_module "$selector"; done
+	rg -q $'desktop/hyprland\t.*\tsource:arch:multilib$' "$TARGET_ROOT$PACKAGE_PLAN"
+	if rg -q '^gaming/|^hardware/gpu/' "$TARGET_ROOT$PACKAGE_PLAN"; then
+		die 'minimal VM unexpectedly selected gaming or physical GPU modules'
+	fi
+)
 
 MODULE_STATES=()
 MODULE_FILE_OWNERS=()

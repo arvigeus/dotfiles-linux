@@ -213,7 +213,7 @@ _pkg_apply() {
 	local native_operation=${2:?native package operation required}
 	shift 2
 
-	local spec plugin index i
+	local spec plugin index i status
 	local native_packages=()
 	local plugins=()
 	local plugin_packages=()
@@ -241,11 +241,15 @@ _pkg_apply() {
 		plugin_packages[$index]+="$PKG_NAME"$'\n'
 	done
 
-	((${#native_packages[@]} == 0)) || "$native_operation" "${native_packages[@]}"
+	((${#native_packages[@]} == 0)) || "$native_operation" "${native_packages[@]}" || return
 	local packages=()
 	for ((index = 0; index < ${#plugins[@]}; index++)); do
 		mapfile -t packages <<<"${plugin_packages[$index]%$'\n'}"
 		_pkg_plugin_call "${plugins[$index]}" "$operation" "${packages[@]}"
+		# Preserve plugin errexit for ordinary callers, and propagate failures
+		# explicitly when a caller's conditional suppresses errexit.
+		status=$?
+		((status == 0)) || return "$status"
 	done
 }
 

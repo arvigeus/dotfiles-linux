@@ -196,8 +196,9 @@ Do not write both `arch:name` and `fedora:name` in that case. Distro scoping is
 for different names, availability, or sources—not documentation noise.
 
 There is one intentional Arch shorthand: an `arch:lib32-*` native-looking spec
-is dispatched through `sources/arch/multilib.sh`. This enables Multilib only when a
-selected declaration needs a 32-bit package. Packages without the `lib32-`
+is dispatched through `sources/arch/multilib.sh`. Multilib is also an explicit
+source prerequisite of ALHP and the Hyprland desktop, whose upstream Epic runner
+requires 32-bit libraries even in the minimal VM profile. Packages without the `lib32-`
 prefix, such as Steam, use the explicit `arch:multilib/<name>` form when they
 must come from that repository.
 

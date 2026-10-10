@@ -67,6 +67,73 @@ for repositories in \
 done
 unset PACMAN_CONFIG
 
+# Exercise real source preparation with third-party repositories already
+# present and no active official multilib fallback. Stub package transactions
+# so every operation checks the repository order without modifying the host.
+(
+	SETUP_ROOT=$PROJECT_ROOT DISTRO=arch
+	source "$PROJECT_ROOT/lib/package.sh"
+	PACMAN_CONFIG="$TEST_ROOT/sources-pacman.conf"
+	cat >"$PACMAN_CONFIG" <<'EOF'
+[options]
+[core]
+Include = /etc/pacman.d/mirrorlist
+[extra]
+Include = /etc/pacman.d/mirrorlist
+#[multilib]
+#Include = /etc/pacman.d/mirrorlist
+[ogc]
+Server = https://pacman.opengamingcollective.org
+[chaotic-aur]
+Include = /etc/pacman.d/chaotic-mirrorlist
+EOF
+	assert_multilib_priority() {
+		local official third_party
+		official=$(rg -n '^\[multilib\]$' "$PACMAN_CONFIG")
+		for repo in ogc chaotic-aur; do
+			third_party=$(rg -n "^\[$repo\]$" "$PACMAN_CONFIG")
+			((${official%%:*} < ${third_party%%:*}))
+		done
+	}
+	pacman() {
+		assert_multilib_priority
+		printf '%s\n' "$*" >>"$TEST_ROOT/source-transactions"
+	}
+	pkg_native_is_installed() { return 0; }
+	pkg_native_install() {
+		assert_multilib_priority
+		printf 'install %s\n' "$*" >>"$TEST_ROOT/source-transactions"
+	}
+	pkg_repo_enable arch:multilib
+	pkg_repo_enable arch:multilib
+	[[ $(cat "$TEST_ROOT/source-transactions") == '-Syu --needed --noconfirm' ]]
+	[[ $(rg -c '^\[multilib\]$' "$PACMAN_CONFIG") == 1 ]]
+
+	# Supply the CPU capability result only; ALHP's real prerequisite dispatch,
+	# repository writer and upgrade sequencing remain under test.
+	grep() {
+		if [[ $* == '-Fq x86-64-v3 (supported, searched)' ]]; then
+			command cat >/dev/null
+			return 0
+		fi
+		command grep "$@"
+	}
+	# Start ALHP from the missing-fallback configuration again.
+	sed -i '/^\[multilib\]$/,+1d' "$PACMAN_CONFIG"
+	: >"$TEST_ROOT/source-transactions"
+	pkg_repo_enable arch:alhp
+	[[ $(cat "$TEST_ROOT/source-transactions") == $'-Syu --needed --noconfirm\n-Sy --noconfirm\ninstall chaotic-aur/alhp-keyring chaotic-aur/alhp-mirrorlist\n-Syu --needed --noconfirm' ]]
+	overlay=$(rg -n '^\[multilib-x86-64-v3\]$' "$PACMAN_CONFIG")
+	official=$(rg -n '^\[multilib\]$' "$PACMAN_CONFIG")
+	((${overlay%%:*} < ${official%%:*}))
+	cp "$PACMAN_CONFIG" "$TEST_ROOT/sources-pacman-before.conf"
+	: >"$TEST_ROOT/source-transactions"
+	pkg_repo_enable arch:multilib
+	pkg_repo_enable arch:alhp
+	cmp "$PACMAN_CONFIG" "$TEST_ROOT/sources-pacman-before.conf"
+	[[ $(cat "$TEST_ROOT/source-transactions") == 'install chaotic-aur/alhp-keyring chaotic-aur/alhp-mirrorlist' ]]
+)
+
 # A booted Arch root must contain its own rebuild tool; live-ISO availability
 # alone is insufficient. Capture the backend's real base-install invocation.
 (

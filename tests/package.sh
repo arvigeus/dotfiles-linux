@@ -15,12 +15,14 @@ pkg_native_install() {
 	printf 'native-install' >>"$PACKAGE_TEST_LOG"
 	printf ' %s' "$@" >>"$PACKAGE_TEST_LOG"
 	printf '\n' >>"$PACKAGE_TEST_LOG"
+	return "${PACKAGE_TEST_NATIVE_STATUS:-0}"
 }
 
 pkg_native_remove() {
 	printf 'native-remove' >>"$PACKAGE_TEST_LOG"
 	printf ' %s' "$@" >>"$PACKAGE_TEST_LOG"
 	printf '\n' >>"$PACKAGE_TEST_LOG"
+	return "${PACKAGE_TEST_NATIVE_STATUS:-0}"
 }
 
 pkg_native_is_installed() {
@@ -50,6 +52,38 @@ assert_log $'native-install nano linux\nshared-install one runtime/org.example.P
 
 pkg_remove nano test/one arch:test/two
 assert_log $'native-remove nano\nshared-remove one\narch-remove two'
+
+# Dependency providers guard pkg_install with || return. That suppresses
+# errexit inside the dispatcher, so failed transactions must propagate their
+# status explicitly and stop before another source can mask the failure.
+for DISTRO in arch fedora; do
+	for operation in install remove; do
+		if PACKAGE_TEST_NATIVE_STATUS=42 "pkg_$operation" nano test/one; then
+			fail "$DISTRO native $operation failure was reported successful"
+		else
+			[[ $? == 42 ]] || fail "$DISTRO native $operation status was lost"
+		fi
+		assert_log "native-$operation nano"
+	done
+done
+DISTRO=arch
+
+# A source failure must also stop dispatch before a later source succeeds.
+(
+	# shellcheck disable=SC2329 # called indirectly by pkg_install/pkg_remove
+	_pkg_plugin_call() {
+		printf 'failed-source %s\n' "$2" >>"$PACKAGE_TEST_LOG"
+		return 43
+	}
+	for operation in install remove; do
+		if "pkg_$operation" test/one arch:test/two; then
+			fail "$operation source failure was reported successful"
+		else
+			[[ $? == 43 ]] || fail "$operation source status was lost"
+		fi
+		assert_log "failed-source $operation"
+	done
+)
 
 pkg_repo_enable test
 pkg_repo_enable arch:test

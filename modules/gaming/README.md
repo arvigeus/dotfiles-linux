@@ -248,6 +248,11 @@ patched Mesa or latency layer is mixed into the stack. LACT was removed:
 continuous GPU clock/voltage management is not the chosen control plane for a
 firmware-managed laptop dGPU.
 
+ALHP enables official multilib before installing its prerequisites or running
+its first upgrade. Official multilib stays ahead of Chaotic-AUR/OGC, with the
+ALHP multilib overlay directly before it, so packages ALHP has not rebuilt can
+resolve their ordinary Arch 32-bit dependencies.
+
 ### ASUS power, fans, and GPU modes
 
 `asusd` is the sole owner of platform profiles and CPU energy-performance

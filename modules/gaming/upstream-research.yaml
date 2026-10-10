@@ -45,6 +45,7 @@ sources:
     adopted:
       - CPU-gated x86-64-v3 core, extra, and multilib overlays on Arch
       - repository ordering directly before each official Arch fallback
+      - official multilib enabled before ALHP prerequisites and the first overlay upgrade, ahead of Chaotic-AUR/OGC
       - ALHP keyring and mirrorlist AUR packages through their signed Chaotic-AUR builds
     rejected:
       - x86-64-v4 on the Ryzen 9 6900HS

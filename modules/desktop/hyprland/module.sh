@@ -10,6 +10,9 @@ source "$SETUP_ROOT/lib/module.sh"
 
 # UWSM and standard systemd user services own the graphical-session lifecycle.
 requires=(hardware/audio hardware/network hardware/bluetooth base/archive base/xdg browsers/firefox)
+# Upstream's Epic runner needs 32-bit dependencies even on the minimal VM
+# profile, which does not select gaming/steam or a physical GPU module.
+sources=(arch:multilib)
 packages=(
 	arch:git-pkgbuild/github.com/arvigeus/zephyrus-shell
 	# Machine-selected desktop companions and MIME defaults.

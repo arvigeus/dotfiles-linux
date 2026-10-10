@@ -10,6 +10,10 @@ source_prepare() {
 		return 1
 	}
 
+	# ALHP does not rebuild every multilib package. Enable the complete official
+	# fallback before installing prerequisites or upgrading the overlay.
+	pkg_repo_enable arch:multilib
+
 	# ALHP publishes these trust and mirror packages through the AUR; use their
 	# signed Chaotic-AUR builds so repository setup does not bootstrap an AUR
 	# toolchain before the optimized overlay is active.
@@ -29,8 +33,6 @@ Include = /etc/pacman.d/alhp-mirrorlist
 EOF
 		refresh=true
 	fi
-	# This may be written before [multilib] is enabled. pacman_repo_write appends
-	# it in that case, and the multilib plugin later appends the official fallback.
 	if pacman_repo_write "multilib-$_ALHP_LEVEL" multilib <<'EOF'; then
 Usage = Sync Install Upgrade
 Include = /etc/pacman.d/alhp-mirrorlist

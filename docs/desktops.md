@@ -92,6 +92,12 @@ companion applications/MIME defaults, greetd policy and machine DDC permissions.
 The provider stays module-local because this is currently its only consumer;
 move it to shared sources if another leaf needs it.
 
+The leaf explicitly enables official Arch multilib before package installation.
+Zephyrus's upstream optional dependencies include Legendary and umu; umu needs
+32-bit libraries even when the selected host has no Steam or physical GPU
+module. Multilib precedes Chaotic-AUR/OGC so dependency resolution prefers the
+official libraries. ALHP also enables this fallback before its first upgrade.
+
 Every bootstrap/rebuild clones current public default-branch HEAD. Standard Git
 URL rewriting makes makepkg use that same checkout for matching VCS sources,
 avoiding another fetch and metadata/payload revision races. Generated SRCINFO is
